@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+	<meta name="Feiyang (Kathy) Yu's Photo Gallery" content="Photo albums of Feiyang (Kathy) Yu">
+	<link rel="stylesheet" type="text/css" href="/style.css">
+    <script src="/script.js"></script>
+	<title>Kathy's Gallery</title>
+  </head>
+  
+  <body>
+    <main>
+      <h1>Kathy's Photo Gallery</h1>
+      <p>Welcome to my photo gallery!</p>
+      <p>I enjoy documenting the little moments in life! A friend reunion, a delicious dish, a thoughtful text, a cool poster, ... I like photographing these things because they can vividly take me back in time to lovely times.</p>
+            
+	  <h3>FOOD</h3>
+      <figure>
+        <!--- Implements responsive images with resolution switching -->
+        <img src="/images/FeiyangYu_picture-1306w.jpg" 
+             alt="Feiyang Yu picture" 
+             srcset="/images/FeiyangYu_picture-200w.jpg 200w,
+                     /images/FeiyangYu_picture-480w.jpg 480w
+                     /images/FeiyangYu_picture-1306w.jpg 1306w"
+             sizes="(max-width: 300px) 200px,
+                    480px"/>
+        <figcaption>Profile picture</figcaption>
+      </figure>
+
+      <figure>
+        <!--- Implements responsive images with resolution switching -->
+        <img src="/images/FeiyangYu_picture-1306w.jpg" 
+             alt="Feiyang Yu picture" 
+             srcset="/images/FeiyangYu_picture-200w.jpg 200w,
+                     /images/FeiyangYu_picture-480w.jpg 480w
+                     /images/FeiyangYu_picture-1306w.jpg 1306w"
+             sizes="(max-width: 300px) 200px,
+                    480px"/>
+        <figcaption>Profile picture</figcaption>
+      </figure>
+
+	  <h3>BEAUTIFUL PLACES</h3>
+
+    </main>
+        
+	<nav role="navigation" aria-label="navigation bar">
+	  <a href="/index.html">Go back to homepage</a>
+	  <a href="/blogs.html">Check out hidden talents</a>
+	</nav>
+
+    <!--- add aria -->
+    <footer>Last modified on <time>2020-05-26</time>.</footer>
+    
+  </body>
+</html>
