@@ -41,6 +41,12 @@
         <figcaption>Animal Crossing avatar picture</figcaption>
       </figure>
 
+    <!--- Dynamic content: cycling greetings -->
+    <div id="dynamic">
+      <h3 id="greeting-container">Greetings!</h3>
+      <button onclick="addRandomGreeting()">CLICK HERE</button>
+    </div>
+
       <!--- Experiences and projects organized as items in unordered lists. -->
       <h3>Projects</h3>
       <ul>
@@ -87,14 +93,14 @@
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
       <h5>Submit feedback :)</h5>
-      <form action="something">
+      <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/index.html#contact_me">
         <label for="message">Enter your message here...</label>
         <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
-        <label for="message_sender_name">Your name [optional]:</label>
-        <input type="text" id="message_sender_name" name="message_sender_name"
+        <label for="message-sender-name">Your name [required]:</label>
+        <input type="text" id="message-sender-name" name="message-sender-name" required
                placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
-        <label for="message_sender_email">Your email [required]:</label>
-        <input type="email" id="message_sender_email" name="message_sender_email"
+        <label for="message-sender-email">Your email [required]:</label>
+        <input type="email" id="message-sender-email" name="message-sender-email" required
                placeholder="example@gmail.com"><br>
         <input type="submit" value="Submit">
       </form>
