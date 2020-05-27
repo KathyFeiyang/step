@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
-    <meta charset="UTF-8">
-	<meta name="Feiyang (Kathy) Yu's Portfolio" 
+    <meta charset="utf-8">
+    <meta name="Feiyang (Kathy) Yu's Portfolio"
           content="Personal information and projects of Feiyang (Kathy) Yu">
-	<link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/style.css">
     <script src="/script.js"></script>
-	<title>Kathy's Portfolio</title>
+    <title>Kathy's Portfolio</title>
   </head>
 
   <body>
@@ -19,14 +19,14 @@
     <!--- Main section includes primary content in portfolio -->
     <main>
       <h1>Kathy's Portfolio</h1>
-      <p>Hello! Welcome to my homepage. My name is Feiyang Yu (Kathy). I'm a Computer Science major at 
+      <p>Hello! Welcome to my homepage. My name is Feiyang Yu (Kathy). I'm a Computer Science major at
          Columbia University. I'm incredibly excited for the STEP internship program!</p>
       <p>In my free time, I <em>love</em> watching television series, and exploring food and restaurants!</p>
 
       <figure>
         <!--- Implements responsive images with resolution switching -->
         <img src="/images/FeiyangYu_picture-480w.jpg"
-             alt="Feiyang Yu picture" 
+             alt="Feiyang Yu picture"
              srcset="/images/FeiyangYu_picture-480w.jpg 480w,
                      /images/FeiyangYu_picture-200w.jpg 200w"
              sizes="(max-width: 400px) 200px,
@@ -35,44 +35,44 @@
       </figure>
       <figure>
         <!--- Implements responsive images with resolution switching -->
-        <img src="/images/FeiyangYu_avatar.jpg" 
+        <img src="/images/FeiyangYu_avatar.jpg"
              alt="Feiyang Yu avatar"
              width="200"/>
         <figcaption>Animal Crossing avatar picture</figcaption>
       </figure>
-      
+
       <!--- Experiences and projects organized as items in unordered lists. -->
       <h3>Projects</h3>
       <ul>
         <li>
-	      <h4>Neural simulation backend engine research project</h4>
-    	  <h5>Student researcher at Bionet Group of Columbia University</h5>
-		  <ul>
-            <li>Benchmarked and implemented different neural simulation backend engines, including 
-                those based in CUDA C, TensorFlow, and more; investigated speed performances and 
+          <h4>Neural simulation backend engine research project</h4>
+          <h5>Student researcher at Bionet Group of Columbia University</h5>
+          <ul>
+            <li>Benchmarked and implemented different neural simulation backend engines, including
+                those based in CUDA C, TensorFlow, and more; investigated speed performances and
                 experimented with methods for speed improvements;</li>
             <li>Implemented a new fast and flexible TensorFlow+Keras based simulation library and API.</li>
           </ul>
- 		</li>
-		<li>
-		  <h4>SDN web server automatic configuration</h4>
-		  <h5>Software engineer intern at BiTOSS/DCConnect Global Limited</h5>
-	      <ul>
+        </li>
+        <li>
+          <h4>SDN web server automatic configuration</h4>
+          <h5>Software engineer intern at BiTOSS/DCConnect Global Limited</h5>
+          <ul>
             <li>Wrote Ansible playbooks that can auto- install and configure web servers.</li>
           </ul>
-		</li>
-		<li>
-		  <h4>Image recognition + result streaming system; Image processing deep learning library</h4>
-		  <h5>Software engineer intern at Leopard Imaging Inc.</h5>
-		  <ul>
-            <li>Realized an automatic, edge computing process of AI model optimization, real-time 
-                local inference, embedding of inference results, and streaming of result video, 
+        </li>
+        <li>
+          <h4>Image recognition + result streaming system; Image processing deep learning library</h4>
+          <h5>Software engineer intern at Leopard Imaging Inc.</h5>
+          <ul>
+            <li>Realized an automatic, edge computing process of AI model optimization, real-time
+                local inference, embedding of inference results, and streaming of result video,
                 using Amazon Web Services (AWS) and NVIDIA Jetson developer kits;</li>
-            <li>Employed and refactored a license plate recognition, face recognition and object 
-                tracking library, generated extensive developer and demo guides, and wrote dependencies 
+            <li>Employed and refactored a license plate recognition, face recognition and object
+                tracking library, generated extensive developer and demo guides, and wrote dependencies
                 installation and library setup scripts.</li>
           </ul>
-		</li>
+        </li>
       </ul>
 
     </main>
@@ -80,30 +80,30 @@
     <!--- Contact info includes LinkedIn, GitHub and feedback form submission -->
     <div class="contact_info">
       <h3 id="contact_me">Contact Me</h3>
-	  <a href="https://www.linkedin.com/in/feiyang-yu-9818b7169">
+      <a href="https://www.linkedin.com/in/feiyang-yu-9818b7169">
         <img src="/images/LinkedIn_icon.png" width="50" height="50">
       </a>
-	  <a href="https://www.github.com/KathyFeiyang">
+      <a href="https://www.github.com/KathyFeiyang">
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
       <h5>Submit feedback :)</h5>
-	  <form action="something">
-	    <label for="message">Enter your message here...</label>
-	    <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
-	    <label for="message_sender_name">Your name [optional]:</label>
-	    <input type="text" id="message_sender_name" name="message_sender_name" 
+      <form action="something">
+        <label for="message">Enter your message here...</label>
+        <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
+        <label for="message_sender_name">Your name [optional]:</label>
+        <input type="text" id="message_sender_name" name="message_sender_name"
                placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
-	    <label for="message_sender_email">Your email [required]:</label>
-	    <input type="email" id="message_sender_email" name="message_sender_email" 
+        <label for="message_sender_email">Your email [required]:</label>
+        <input type="email" id="message_sender_email" name="message_sender_email"
                placeholder="example@gmail.com"><br>
-	    <input type="submit" value="Submit">
-	  </form>
+        <input type="submit" value="Submit">
+      </form>
     </div>
-    
+
     <div class="linking">
       <a href="#nav"><h3>Go to top of the page :)</h3></a>
     </div>
-    
+
     <!--- add aria -->
     <!--- Additional information about the page -->
     <footer>Last modified on <time>2020-05-26</time>.</footer>
