@@ -46,10 +46,32 @@ function presentFeedbackReceipt() {
 
   // Construct feedback receipt.
   const receipt = `Dear ${userName},\nThank you for submitting a feedback!\n`
-                   + `We have recorded the following:\n`
-                   + `    *Message: "${userFeedback}"\n`
-                   + `    *Contact Information: ${userEmail}\n`;
+                  + `We have recorded the following:\n`
+                  + `    *Message: "${userFeedback}"\n`
+                  + `    *Contact Information: ${userEmail}\n`;
 
   // Present feedback receipt in pop-up window.
   window.alert(receipt);
+}
+
+/**
+ * Executes JavaScript code and returns execution results like a console.
+ */
+function executeJavaScript() {
+  // Obtain user input JavaScript code.
+  const promptString = "Please enter your JavaScript code:\n";
+  const jsCode = window.prompt(promptString);
+  if (!jsCode) {
+    window.alert("No code received.");
+    return;
+  }
+
+  // Executes JavaScript code.
+  const executionResult = eval(jsCode);
+
+  // Present execution results in pop-up window.
+  const consoleOutput = `CONSOLE\n`
+                        + `> ${jsCode}\n`
+                        + `< ${executionResult}`;
+  window.alert(consoleOutput);
 }
