@@ -1,9 +1,96 @@
-#content {
-  margin-left: auto;
-  margin-right: auto;
-  width: 650px;
+/* General Styling */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 30px;
+  margin: 50px;
 }
 
-#greeting-container {
-  margin-top: 20px;
+h3 {
+  background-color: blanchedalmond;
+  border-color: gold;
+  border-style: none none none solid;
+  border-width: 10px;
+  padding: 15px;
+}
+
+a {
+  transition-duration: 0.5s;
+}
+
+/* Animation for when the mouse places above a reference.*/
+a:hover {
+  color: blanchedalmond;
+}
+
+/* Images */
+img {
+  border-color: darkgray;
+  border-radius: 10px;
+  border-style: double;
+  border-width: thick;
+}
+
+figcaption {
+  border-color: darkgray;
+  border-style: none none dashed none;
+  width: 100%;
+}
+
+/* Buttons */
+button,
+.button {
+  background-color: blanchedalmond;
+  border-color: black;
+  border-style: solid;
+  border-width: medium;
+  color: black;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  font-size: 30px;
+  padding: 5px 25px;
+  text-align: center;
+  transition-duration: 0.5s;
+}
+
+/* Animation for when the mouse places on top of a button.*/
+button:hover,
+.button:hover {
+  background-color: black;
+  color: blanchedalmond;
+}
+
+/* Navigation */
+nav,
+.linking {
+  background-color: powderblue;
+  border-color: royalblue;
+  border-style: solid;
+  border-width: thick;
+  text-align: left;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 30px;
+  margin: 15px;
+  padding: 15px;
+}
+
+#sticky-nav {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  top: 15px;
+}
+
+/* Submission form section */
+#feedback-form {
+  border-color: gold;
+  border-style: none none none solid;
+  border-width: 10px;
+  padding: 30px;
+}
+
+/* Specific headlines */
+#food,
+#cuteness,
+#places {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  top: 170px;
 }
