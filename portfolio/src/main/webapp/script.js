@@ -25,7 +25,6 @@ function addCyclicGreeting() {
 
   // Pick the next greeting in a cycle.
   const greeting = greetings[greetingIndex];
-
   // Update greeting index.
   greetingIndex = (greetingIndex + 1) % greetings.length;
 
@@ -35,7 +34,7 @@ function addCyclicGreeting() {
 }
 
 /**
- * Presents a receipt for getting user form feedback in pop-up window.
+ * Presents a receipt for getting user form feedback in a pop-up window.
  */
 function presentFeedbackReceipt() {
   // Obtain user input feedback content, name and email.
@@ -78,7 +77,7 @@ function executeConsoleCode() {
     return;
   }
 
-  // Present execution results in pop-up window.
+  // Present execution results in a pop-up window.
   const consoleOutput = `CONSOLE\n`
                         + `> ${jsCode}\n`
                         + `< ${executionResult}\n`;
