@@ -16,10 +16,10 @@
 "use strict"
 
 /**
- * Adds a cycling greeting to the page.
+ * Adds a cyclic greeting to the page.
  */
 let greetingIndex = 0;
-function addRandomGreeting() {
+function addCyclicGreeting() {
   const greetings =
       ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!', 'Hallo Welt!'];
 
@@ -50,28 +50,37 @@ function presentFeedbackReceipt() {
                   + `    *Message: "${userFeedback}"\n`
                   + `    *Contact Information: ${userEmail}\n`;
 
-  // Present feedback receipt in pop-up window.
+  // Present feedback receipt in a pop-up window.
   window.alert(receipt);
 }
 
 /**
  * Executes JavaScript code and returns execution results like a console.
  */
-function executeJavaScript() {
+function executeConsoleCode() {
   // Obtain user input JavaScript code.
   const promptString = "Please enter your JavaScript code:\n";
   const jsCode = window.prompt(promptString);
   if (!jsCode) {
-    window.alert("No code received.");
+    window.alert("No code is received.");
     return;
   }
 
-  // Executes JavaScript code.
-  const executionResult = eval(jsCode);
+  // Execute JavaScript code; catch and return error if error occurs.
+  let executionResult = null;
+  try {
+    executionResult = Function('"use strict"; return ' + jsCode)();
+  }
+  catch (err) {
+    window.alert(`An error has occurred:\n`
+                 + `> ${jsCode}\n`
+                 + `< ${err}\n`);
+    return;
+  }
 
   // Present execution results in pop-up window.
   const consoleOutput = `CONSOLE\n`
                         + `> ${jsCode}\n`
-                        + `< ${executionResult}`;
+                        + `< ${executionResult}\n`;
   window.alert(consoleOutput);
 }
