@@ -84,17 +84,27 @@ function executeConsoleCode() {
 }
 
 /**
- * Search for and display top 3 Wikipedia matches without reloading the page.
+ * Search for and display top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
+ *   without reloading the page.
  */
 function searchWikipedia() {
   helperSearchWikipedia()
     .then(wikipediaJSON => {
-      // Display Wikipedia information on the page.
       const wikipediaContainer = document.getElementById('wikipedia-container');
-      const wikipediaSearchResult = 'Top 3 Search Results:\n' +
-                                    wikipediaJSON[1].join("\n");
-      wikipediaContainer.innerText = wikipediaSearchResult;
-    })
+      wikipediaContainer.innerText = 'Top 3 Search Results:\n';
+
+      // Display Wikipedia search phrase matches and corresponding URLs on the page.
+      for (let i = 0; i < wikipediaJSON[1].length; i++) {
+        const searchResult = document.createElement('a');
+        const resultText = document.createTextNode(wikipediaJSON[1][i]);
+        searchResult.href = wikipediaJSON[3][i];
+        // Embed result phrase into URL anchor.
+        searchResult.appendChild(resultText);
+        // Add combined result of text and URL to the page.
+        wikipediaContainer.appendChild(searchResult);
+        wikipediaContainer.appendChild(document.createElement('br'));
+      }
+    });
 }
 
 /**
