@@ -44,7 +44,7 @@ function presentFeedbackReceipt() {
   const userEmail = formElements[2].value;
 
   // Construct feedback receipt.
-  const receipt = `Dear ${userName},\nThank you for submitting a feedback!\n` +
+  const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
                   `We have recorded the following:\n` +
                   `    *Message: "${userFeedback}"\n` +
                   `    *Contact Information: ${userEmail}\n`;
