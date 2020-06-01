@@ -34,12 +34,26 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a quote to the page.
+ * Fetches and adds a collection of quotes to the page.
  */
 async function addQuote() {
+  // Fetch quotes as JSON from servlet.
   const response = await fetch('/data');
-  const quoteHTML = await response.text();
-  document.getElementById('quote-container').innerHTML = quoteHTML;
+  const quotesJSON = await response.json();
+  console.log('CONFIRM: addQuote() fetched: ' + quotesJSON);
+
+  // Format quotes as items in a HTML list structure.
+  const quotesHTML = document.getElementById('quote-container');
+  document.getElementById('quote-container').innerHTML = '';
+
+  for (let i = 0; i < quotesJSON.length; i++) {
+    // Create a quote's corresponding list item HTML element.
+    const quoteItem = document.createElement('li');
+    quoteItem.innerText = quotesJSON[i];
+
+    // Add list item to list structure.
+    quotesHTML.appendChild(quoteItem);
+  }
 }
 
 /**
@@ -127,7 +141,7 @@ async function helperSearchWikipedia() {
 
   // Fetch HTTP response for search result.
   const wikipediaResponse = await fetch(wikipediaURL, {mode: 'cors'});
-  const wikipediaJSON = wikipediaResponse.json();
+  const wikipediaJSON = await wikipediaResponse.json();
   return wikipediaJSON;
 }
 
