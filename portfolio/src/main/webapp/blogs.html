@@ -31,6 +31,10 @@
       <p>I just started learning JavaScript and <em>this</em> portfolio is my first piece of code.<br><br>
           <b>Would you like to write some JavaScript as well? Here is a mini-console:</b></p>
       <button onclick="executeConsoleCode()">SURE!</button>
+      <p><b>Additionally, would you like to search for something on Wikipedia? Please type your keyword below:</b><br></p>
+      <textarea id="search-keyword" name="search-keyword" required placeholder="Your keyword..."></textarea><br>
+      <button onclick="searchWikipedia()">SEARCH</button>
+      <div id="wikipedia-container"></div>
     </main>
 
     <nav role="navigation" aria-label="navigation bar">
@@ -39,7 +43,7 @@
       <a href="/index.html#contact_me">Contact Me</a>
     </nav>
 
-    <footer>Last modified on <time>2020-05-28</time>.</footer>
+    <footer>Last modified on <time>2020-05-29</time>.</footer>
 
   </body>
 </html>

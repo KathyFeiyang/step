@@ -37,9 +37,13 @@
         <!--- Implements responsive images with resolution switching -->
         <img src="/images/FeiyangYu_avatar.jpg"
              alt="Feiyang Yu avatar"
-             width="200"/>
-        <figcaption>Animal Crossing avatar picture</figcaption>
+             width="200"
+             id="talking-avatar"/>
+        <figcaption id="avatar-talk-bubble">Animal Crossing avatar picture
+                                            [<em>Click on the avatar for a surprise!</em>]</figcaption>
       </figure>
+      <!--- Needs to be called here instead of in JavaScript file, for HTML elements to be loaded first. -->
+      <script>addListenersForTalkingAvatar()</script>
 
     <!--- Dynamic content: cycling greetings -->
     <div id="dynamic">
@@ -112,7 +116,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-05-28</time>.</footer>
+    <footer>Last modified on <time>2020-05-29</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>
