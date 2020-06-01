@@ -14,19 +14,36 @@
 
 package com.google.sps.servlets;
 
+import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-/** Servlet that returns some example content. TODO: modify this file to handle comments data */
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
+  private List<String> quotes;
+
+  @Override
+  public void init() {
+    quotes = new ArrayList<>();
+    quotes.add("Hope you are having a good one!");
+    quotes.add("How are you :)");
+    quotes.add("It is fantastic to see you!");
+    quotes.add("Thanks for vising my portfolio!");
+  }
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    response.setContentType("text/html;");
-    response.getWriter().println("<h1>Hello Kathy!</h1>");
+    // Convert quotes object to JSON format.
+    Gson gson = new Gson();
+    String json = gson.toJson(quotes);
+
+    // Send the resultant JSON as the sevlet response.
+    response.setContentType("application/json;");
+    response.getWriter().println(json);
   }
 }
