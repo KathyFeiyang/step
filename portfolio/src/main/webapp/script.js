@@ -34,6 +34,15 @@ function addCyclicGreeting() {
 }
 
 /**
+ * Fetches and adds a quote to the page.
+ */
+async function addQuote() {
+  const response = await fetch('/data');
+  const quoteHTML = await response.text();
+  document.getElementById('quote-container').innerHTML = quoteHTML;
+}
+
+/**
  * Presents a receipt for getting user form feedback in a pop-up window.
  */
 function presentFeedbackReceipt() {
@@ -84,7 +93,7 @@ function executeConsoleCode() {
 }
 
 /**
- * Search for and display top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
+ * Searches for and displays top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
  *   without reloading the page.
  */
 function searchWikipedia() {
@@ -123,7 +132,7 @@ async function helperSearchWikipedia() {
 }
 
 /**
- * Add event listeners to make avatar picture talk at mouse click.
+ * Adds event listeners to make avatar picture talk at mouse click.
  */
 function addListenersForTalkingAvatar() {
   const talkingAvatar = document.getElementById('talking-avatar');
@@ -134,7 +143,7 @@ function addListenersForTalkingAvatar() {
 }
 
 /**
- * Add avatar greeting to page and emphasis to avatar image.
+ * Adds avatar greeting to page and emphasis to avatar image.
  */
 function addAvatarGreeting() {
   const avatarTalkBubble = document.getElementById('avatar-talk-bubble');
@@ -152,7 +161,7 @@ function addAvatarGreeting() {
 }
 
 /**
- * Remove avatar greeting and image emphasis.
+ * Removes avatar greeting and image emphasis.
  */
 function clearAvatarGreeting() {
   const avatarTalkBubble = document.getElementById('avatar-talk-bubble');
