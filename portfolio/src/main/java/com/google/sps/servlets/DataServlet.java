@@ -14,6 +14,9 @@
 
 package com.google.sps.servlets;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,13 +43,25 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    // Obtain user input from submitted form.
+    // Obtain user input from submitted form and timestamp.
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
     String email = request.getParameter("message-sender-email");
+    long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
     comment = new FeedbackRecord(message, name, email);
+
+    // Create corresponding Datastore entity.
+    Entity feedbackEntity = new Entity("FeedbackRecord");
+    feedbackEntity.setProperty("message", comment.getMessage());
+    feedbackEntity.setProperty("name", comment.getName());
+    feedbackEntity.setProperty("email", comment.getEmail());
+    feedbackEntity.setProperty("timestamp", timestamp);
+
+    // Store feedback entity into database.
+    DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    datastore.put(feedbackEntity);
 
     // Redirect back to the homepage's "Contact Me" section.
     response.sendRedirect("/index.html#contact_me");
@@ -62,6 +77,18 @@ class FeedbackRecord {
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
+  }
+
+  public String getMessage() {
+    return this.message;
+  }
+
+  public String getName() {
+    return this.name;
+  }
+
+  public String getEmail() {
+    return this.email;
   }
 
   @Override
