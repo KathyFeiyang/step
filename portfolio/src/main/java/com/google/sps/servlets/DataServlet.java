@@ -29,7 +29,7 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void init() {
-    quotes = new ArrayList<>();
+    quotes = new ArrayList<>(4);
     quotes.add("Hope you are having a good one!");
     quotes.add("How are you :)");
     quotes.add("It is fantastic to see you!");
