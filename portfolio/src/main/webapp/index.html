@@ -9,7 +9,7 @@
     <title>Kathy's Portfolio</title>
   </head>
 
-  <body>
+  <body onload="addComments()">
     <nav id="nav" role="navigation" aria-label="navigation bar">
       <a href="/gallery.html">Photo Gallery</a>
       <a href="/blogs.html">Blog Posts</a>
@@ -19,8 +19,6 @@
     <!--- Main section includes primary content in portfolio -->
     <main>
       <h1>Kathy's Portfolio</h1>
-      <button onclick="addQuote()">Say Hello :)</button>
-      <ul id="quote-container"></ul>
       <p>Welcome to my homepage. My name is Feiyang Yu (Kathy). I'm a Computer Science major at
          Columbia University. I'm incredibly excited for the STEP internship program!</p>
       <p>In my free time, I <em>love</em> watching television series, and exploring food and restaurants!</p>
@@ -98,8 +96,10 @@
       <a href="https://www.github.com/KathyFeiyang">
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
+      <ul id="comment-container">Comment History</ul>
+      <button onclick="addComments()">Refresh</button>
       <p><b>Submit feedback :)</b></p>
-      <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/index.html#contact_me">
+      <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/data" method="POST">
         <label for="message">Enter your message here...<br></label>
         <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
         <label for="message-sender-name">Your name [required]:</label>

@@ -34,26 +34,32 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a collection of quotes to the page.
+ * Fetches and adds the most recently submitted comment to the page.
  */
-async function addQuote() {
-  // Fetch quotes as JSON from servlet.
+async function addComments() {
+  // Fetch a comment as JSON from servlet.
   const response = await fetch('/data');
-  const quotesJSON = await response.json();
-  console.log('CONFIRM: addQuote() fetched: ' + quotesJSON);
-
-  // Format quotes as items in a HTML list structure.
-  const quotesHTML = document.getElementById('quote-container');
-  document.getElementById('quote-container').innerHTML = '';
-
-  for (let i = 0; i < quotesJSON.length; i++) {
-    // Create a quote's corresponding list item HTML element.
-    const quoteItem = document.createElement('li');
-    quoteItem.innerText = quotesJSON[i];
-
-    // Add list item to list structure.
-    quotesHTML.appendChild(quoteItem);
+  const commentJSON = await response.json();
+  // If no comment has been submitted yet, add nothing to the page.
+  if (commentJSON === null) {
+    return;
   }
+  const commentFormatted = helperFormatComment(commentJSON);
+  console.log('CONFIRM: addComments() fetched: ' + commentFormatted);
+
+  // Format a comment as an item in a HTML list structure.
+  const commentItem = document.createElement('li');
+  commentItem.innerText = commentFormatted;
+  const commentHTML = document.getElementById('comment-container');
+  commentHTML.innerHTML = '';
+  commentHTML.appendChild(commentItem);
+}
+
+/**
+ * Helper function to construct a formatted String of a comment.
+ */
+function helperFormatComment(commentJSON) {
+  return `"${commentJSON.message}" -- ${commentJSON.name} @ ${commentJSON.email}`;
 }
 
 /**

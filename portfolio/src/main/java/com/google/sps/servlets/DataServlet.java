@@ -25,25 +25,48 @@ import javax.servlet.http.HttpServletResponse;
 
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
-  private List<String> quotes;
-
-  @Override
-  public void init() {
-    quotes = new ArrayList<>();
-    quotes.add("Hope you are having a good one!");
-    quotes.add("How are you :)");
-    quotes.add("It is fantastic to see you!");
-    quotes.add("Thanks for vising my portfolio!");
-  }
+  private FeedbackRecord comment;
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    // Convert quotes object to JSON format.
+    // Convert comment object to JSON format.
     Gson gson = new Gson();
-    String json = gson.toJson(quotes);
+    String json = gson.toJson(comment);
 
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");
     response.getWriter().println(json);
+  }
+
+  @Override
+  public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    // Obtain user input from submitted form.
+    String message = request.getParameter("message");
+    String name = request.getParameter("message-sender-name");
+    String email = request.getParameter("message-sender-email");
+
+    // Pack user input into an object.
+    comment = new FeedbackRecord(message, name, email);
+
+    // Redirect back to the homepage's "Contact Me" section.
+    response.sendRedirect("/index.html#contact_me");
+  }
+}
+
+class FeedbackRecord {
+  private String message;
+  private String name;
+  private String email;
+
+  public FeedbackRecord(String inputMessage, String inputName, String inputEmail) {
+    this.message = inputMessage;
+    this.name = inputName;
+    this.email = inputEmail;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("FeedbackRecord:\nMessage=%s\nName=%s\nEmail=%s\n",
+                         this.message, this.name, this.email);
   }
 }
