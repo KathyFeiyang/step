@@ -17,6 +17,9 @@ package com.google.sps.servlets;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,9 +35,25 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    // Convert comment object to JSON format.
+    // Query comment history from Datastore.
+    Query commentHistoryQuery = new Query("FeedbackRecord").addSort("timestamp", SortDirection.DESCENDING);
+    DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
+
+    // Convert comment Datastore entity into FeedbackRecord objects.
+    List<FeedbackRecord> comments = new ArrayList<>();
+    for (Entity commentEntity : commentHistory.asIterable()) {
+      String message = (String) commentEntity.getProperty("message");
+      String name = (String) commentEntity.getProperty("name");
+      String email = (String) commentEntity.getProperty("email");
+
+      FeedbackRecord commentItem = new FeedbackRecord(message, name, email);
+      comments.add(commentItem);
+    }
+
+    // Convert a history of comment objects to JSON format.
     Gson gson = new Gson();
-    String json = gson.toJson(comment);
+    String json = gson.toJson(comments);
 
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");

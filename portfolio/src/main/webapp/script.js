@@ -34,25 +34,23 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds the most recently submitted comment to the page.
+ * Fetches and adds a history of comments to the page.
  */
 async function addComments() {
-  // Fetch a comment as JSON from servlet.
+  // Fetch comment history as JSON from the Java servlet.
   const response = await fetch('/data');
-  const commentJSON = await response.json();
-  // If no comment has been submitted yet, add nothing to the page.
-  if (commentJSON === null) {
-    return;
-  }
-  const commentFormatted = helperFormatComment(commentJSON);
-  console.log('CONFIRM: addComments() fetched: ' + commentFormatted);
+  const commentsJSON = await response.json();
+  console.log(`CONFIRM: addComments() fetched ${commentsJSON.length} comments.\n`);
 
-  // Format a comment as an item in a HTML list structure.
-  const commentItem = document.createElement('li');
-  commentItem.innerText = commentFormatted;
-  const commentHTML = document.getElementById('comment-container');
-  commentHTML.innerHTML = '';
-  commentHTML.appendChild(commentItem);
+  // Format each comment as an item in a HTML list structure.
+  const commentHistoryHTML = document.getElementById('comment-container');
+  commentHistoryHTML.innerHTML = '';
+  for (let i = 0; i < commentsJSON.length; i++) {
+    const commentFormatted = helperFormatComment(commentsJSON[i]);
+    const commentItem = document.createElement('li');
+    commentItem.innerText = commentFormatted;
+    commentHistoryHTML.appendChild(commentItem);
+  }
 }
 
 /**
