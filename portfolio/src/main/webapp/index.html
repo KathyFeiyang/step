@@ -101,6 +101,7 @@
       <input type="number" id="maxN" name="maxN" onchange="addComments()">
       <ul id="comment-container"></ul>
       <button onclick="addComments()">Refresh</button>
+      <button onclick="deleteCommentHistory()">Delete comment history</button>
       <p><b>Submit feedback :)</b></p>
       <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/data" method="POST">
         <label for="message">Enter your message here...<br></label>

@@ -64,6 +64,25 @@ function helperFormatComment(commentJSON) {
 }
 
 /**
+ * Deletes the complete comment history stored in the backend database.
+ */
+async function deleteCommentHistory() {
+  // Make final confirmation with user about whether to delete the comment history.
+  const confirmed = window.confirm('Please click on "OK" to delete the comment history;' +
+                                   'otherwise please click on "Cancel".\n');
+  if (!confirmed) {
+    return;
+  }
+
+  // Send POST request to backend server to delete comment history.
+  const POSTRequest = new Request('/delete-data', {method: 'POST'});
+  const response = await fetch(POSTRequest);
+
+  // Fetch the now-empty comment history from the server.
+  addComments();
+}
+
+/**
  * Presents a receipt for getting user form feedback in a pop-up window.
  */
 function presentFeedbackReceipt() {
