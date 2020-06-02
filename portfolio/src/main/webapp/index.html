@@ -97,6 +97,8 @@
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
       <p><b>Comment History</b></p>
+      <label for="maxN">Maximum number of entries to show in comment history:</label>
+      <input type="number" id="maxN" name="maxN" onchange="addComments()">
       <ul id="comment-container"></ul>
       <button onclick="addComments()">Refresh</button>
       <p><b>Submit feedback :)</b></p>

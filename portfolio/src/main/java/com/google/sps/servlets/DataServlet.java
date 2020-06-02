@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
   private FeedbackRecord comment;
+  private static final int DEFAULT_MAX_N = 10;
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -40,15 +41,31 @@ public class DataServlet extends HttpServlet {
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
 
+    // Obtain maximum number of comments to display. If the number is invalid, take on the default value.
+    int maxN;
+    try {
+      maxN = Integer.parseInt(request.getParameter("maxN"));
+      if (maxN < 0) {
+        maxN = DEFAULT_MAX_N;
+      }
+    } catch (NumberFormatException e) {
+      maxN = DEFAULT_MAX_N;
+    }
+
     // Convert comment Datastore entity into FeedbackRecord objects.
     List<FeedbackRecord> comments = new ArrayList<>();
+    int counter = 0;
     for (Entity commentEntity : commentHistory.asIterable()) {
+      if (counter == maxN) {
+        break;
+      }
       String message = (String) commentEntity.getProperty("message");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
 
       FeedbackRecord commentItem = new FeedbackRecord(message, name, email);
       comments.add(commentItem);
+      counter++;
     }
 
     // Convert a history of comment objects to JSON format.

@@ -37,8 +37,11 @@ function addCyclicGreeting() {
  * Fetches and adds a history of comments to the page.
  */
 async function addComments() {
-  // Fetch comment history as JSON from the Java servlet.
-  const response = await fetch('/data');
+  // Obtain user input of maximum number of comments to display.
+  const maxN = document.getElementById('maxN').value;
+
+  // Fetch comment history, in the specified length, as JSON from the Java servlet.
+  const response = await fetch(`/data?maxN=${maxN}`);
   const commentsJSON = await response.json();
   console.log(`CONFIRM: addComments() fetched ${commentsJSON.length} comments.\n`);
 
