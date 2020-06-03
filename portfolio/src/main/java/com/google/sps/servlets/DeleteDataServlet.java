@@ -32,11 +32,11 @@ public class DeleteDataServlet extends HttpServlet {
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
     // Query comment history from Datastore database.
-    Query commentHistoryQuery = new Query("FeedbackRecord");
+    Query commentHistoryQuery = new Query("UserComment");
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
-    
-    // Delete all database entries.
+
+    // Delete all database comment entries.
     for (Entity commentEntity : commentHistory.asIterable()) {
       Key commentKey = commentEntity.getKey();
       datastore.delete(commentKey);

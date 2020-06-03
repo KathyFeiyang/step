@@ -87,7 +87,7 @@
 
     </main>
 
-    <!--- Contact info includes LinkedIn, GitHub and feedback form submission -->
+    <!--- Contact info includes LinkedIn, GitHub and user comment form submission -->
     <div class="contact_info">
       <h3 id="contact_me">Contact Me</h3>
       <a href="https://www.linkedin.com/in/feiyang-yu-9818b7169">
@@ -103,10 +103,10 @@
       <ul id="comment-container"></ul>
       <button onclick="addComments()">Refresh</button>
       <button onclick="deleteCommentHistory()">Delete comment history</button>
-      <p><b>Submit feedback :)</b></p>
-      <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/data" method="POST">
+      <p><b>Submit your comments :)</b></p>
+      <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
         <label for="message">Enter your message here...<br></label>
-        <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
+        <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
         <label for="message-sender-name">Your name [required]:</label>
         <input type="text" id="message-sender-name" name="message-sender-name" required
                placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
@@ -123,7 +123,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-05-29</time>.</footer>
+    <footer>Last modified on <time>2020-06-03</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>

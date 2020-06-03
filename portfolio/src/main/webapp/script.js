@@ -83,22 +83,22 @@ async function deleteCommentHistory() {
 }
 
 /**
- * Presents a receipt for getting user form feedback in a pop-up window.
+ * Presents a receipt for getting a user comment, in a pop-up window.
  */
-function presentFeedbackReceipt() {
-  // Obtain user input feedback content, name and email.
-  const formElements = document.getElementById('feedback-form').elements;
-  const userFeedback = formElements[0].value;
+function presentPopupCommentReceipt() {
+  // Obtain user input comment content, name and email.
+  const formElements = document.getElementById('comment-form').elements;
+  const userComment = formElements[0].value;
   const userName = formElements[1].value;
   const userEmail = formElements[2].value;
 
-  // Construct feedback receipt.
+  // Construct user comment receipt.
   const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
                   `We have recorded the following:\n` +
-                  `    *Message: "${userFeedback}"\n` +
+                  `    *Message: "${userComment}"\n` +
                   `    *Contact Information: ${userEmail}\n`;
 
-  // Present feedback receipt in a pop-up window.
+  // Present comment receipt in a pop-up window.
   window.alert(receipt);
 }
 

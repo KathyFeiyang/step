@@ -31,13 +31,13 @@ import javax.servlet.http.HttpServletResponse;
 
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
-  private FeedbackRecord comment;
-  private static final int DEFAULT_MAX_N = 10;
+  private UserComment comment;
+  private static final int DEFAULT_MAX_COMMENTS = 10;
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
     // Query comment history from Datastore.
-    Query commentHistoryQuery = new Query("FeedbackRecord").addSort("timestamp", SortDirection.DESCENDING);
+    Query commentHistoryQuery = new Query("UserComment").addSort("timestamp", SortDirection.DESCENDING);
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
 
@@ -46,26 +46,26 @@ public class DataServlet extends HttpServlet {
     try {
       maxN = Integer.parseInt(request.getParameter("maxN"));
       if (maxN < 0) {
-        maxN = DEFAULT_MAX_N;
+        maxN = DEFAULT_MAX_COMMENTS;
       }
     } catch (NumberFormatException e) {
-      maxN = DEFAULT_MAX_N;
+      maxN = DEFAULT_MAX_COMMENTS;
     }
 
-    // Convert comment Datastore entity into FeedbackRecord objects.
-    List<FeedbackRecord> comments = new ArrayList<>();
-    int counter = 0;
+    // Convert comment Datastore entity into UserComment objects.
+    List<UserComment> comments = new ArrayList<>(maxN);
+    int commentCounter = 0;
     for (Entity commentEntity : commentHistory.asIterable()) {
-      if (counter == maxN) {
+      if (commentCounter == maxN) {
         break;
       }
       String message = (String) commentEntity.getProperty("message");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
 
-      FeedbackRecord commentItem = new FeedbackRecord(message, name, email);
+      UserComment commentItem = new UserComment(message, name, email);
       comments.add(commentItem);
-      counter++;
+      commentCounter++;
     }
 
     // Convert a history of comment objects to JSON format.
@@ -86,30 +86,30 @@ public class DataServlet extends HttpServlet {
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new FeedbackRecord(message, name, email);
+    comment = new UserComment(message, name, email);
 
     // Create corresponding Datastore entity.
-    Entity feedbackEntity = new Entity("FeedbackRecord");
-    feedbackEntity.setProperty("message", comment.getMessage());
-    feedbackEntity.setProperty("name", comment.getName());
-    feedbackEntity.setProperty("email", comment.getEmail());
-    feedbackEntity.setProperty("timestamp", timestamp);
+    Entity commentEntity = new Entity("UserComment");
+    commentEntity.setProperty("message", comment.getMessage());
+    commentEntity.setProperty("name", comment.getName());
+    commentEntity.setProperty("email", comment.getEmail());
+    commentEntity.setProperty("timestamp", timestamp);
 
-    // Store feedback entity into database.
+    // Store user comment entity into database.
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-    datastore.put(feedbackEntity);
+    datastore.put(commentEntity);
 
     // Redirect back to the homepage's "Contact Me" section.
     response.sendRedirect("/index.html#contact_me");
   }
 }
 
-class FeedbackRecord {
+class UserComment {
   private String message;
   private String name;
   private String email;
 
-  public FeedbackRecord(String inputMessage, String inputName, String inputEmail) {
+  public UserComment(String inputMessage, String inputName, String inputEmail) {
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
@@ -129,7 +129,7 @@ class FeedbackRecord {
 
   @Override
   public String toString() {
-    return String.format("FeedbackRecord:\nMessage=%s\nName=%s\nEmail=%s\n",
+    return String.format("UserComment:\nMessage=%s\nName=%s\nEmail=%s\n",
                          this.message, this.name, this.email);
   }
 }
