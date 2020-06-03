@@ -96,13 +96,6 @@
       <a href="https://www.github.com/KathyFeiyang">
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
-      <p><b>Comment History</b></p>
-      <label for="maxN">Maximum number of entries to show in comment history:</label>
-      <input type="number" id="maxN" name="maxN" onchange="addComments()">
-      <p>(The latest comments are displayed on the top.)</p>
-      <ul id="comment-container"></ul>
-      <button onclick="addComments()">Refresh</button>
-      <button onclick="deleteCommentHistory()">Delete comment history</button>
       <p><b>Submit your comments :)</b></p>
       <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
         <label for="message">Enter your message here...<br></label>
@@ -115,6 +108,14 @@
                placeholder="example@gmail.com"><br>
         <input class="button" type="submit" value="Submit">
       </form>
+      <p><b>Comment History</b></p>
+      <label for="maxN">Maximum number of entries to show in comment history:</label>
+      <input type="number" id="maxN" name="maxN" onchange="addComments()"
+             min="0" max="" value="">
+      <p>(The latest comments are displayed on the top.)</p>
+      <ul id="comment-container"></ul>
+      <button onclick="addComments()">Refresh</button>
+      <button onclick="deleteCommentHistory()">Delete comment history</button>
     </div>
 
     <div class="linking">

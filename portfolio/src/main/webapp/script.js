@@ -34,26 +34,36 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a history of comments to the page.
+ * Fetches and adds a history of comments, and the theoretical maximum and default
+ *   number of comments, to the page.
  */
 async function addComments() {
   // Obtain user input of maximum number of comments to display.
   const maxN = document.getElementById('maxN').value;
 
-  // Fetch comment history, in the specified length, as JSON from the Java servlet.
+  // Fetch the comment history, in the specified length, and other metadata,
+  //   as JSON from the Java servlet.
   const response = await fetch(`/data?maxN=${maxN}`);
-  const commentsJSON = await response.json();
-  console.log(`CONFIRM: addComments() fetched ${commentsJSON.length} comments.\n`);
+  const commentDataJSON = await response.json();
+  const comments = commentDataJSON[0];
+  const totalComments = commentDataJSON[1];
+  const defaultComments = commentDataJSON[2];
+  console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
   const commentHistoryHTML = document.getElementById('comment-container');
   commentHistoryHTML.innerHTML = '';
-  for (let i = 0; i < commentsJSON.length; i++) {
-    const commentFormatted = helperFormatComment(commentsJSON[i]);
+  for (let i = 0; i < comments.length; i++) {
+    const commentFormatted = helperFormatComment(comments[i]);
     const commentItem = document.createElement('li');
     commentItem.innerText = commentFormatted;
     commentHistoryHTML.appendChild(commentItem);
   }
+
+  // Set the theoretical maximum and default number of comments for the input field.
+  const maxNInputField = document.getElementById("maxN");
+  maxNInputField.setAttribute("max", totalComments);
+  maxNInputField.setAttribute("value", defaultComments);
 }
 
 /**

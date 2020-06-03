@@ -17,12 +17,14 @@ package com.google.sps.servlets;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -40,6 +42,7 @@ public class DataServlet extends HttpServlet {
     Query commentHistoryQuery = new Query("UserComment").addSort("timestamp", SortDirection.DESCENDING);
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
+    int totalComments = commentHistory.countEntities(FetchOptions.Builder.withDefaults());
 
     // Obtain maximum number of comments to display. If the number is invalid, take on the default value.
     int maxN;
@@ -68,13 +71,17 @@ public class DataServlet extends HttpServlet {
       commentCounter++;
     }
 
-    // Convert a history of comment objects to JSON format.
+    // Convert a history of comment objects, the total number of comments and default number, to JSON format.
+    Collection<Object> commentData = new ArrayList<>(2);
+    commentData.add(comments);
+    commentData.add(totalComments);
+    commentData.add(DEFAULT_MAX_COMMENTS);
     Gson gson = new Gson();
-    String json = gson.toJson(comments);
+    String commentDataJSON = gson.toJson(commentData);
 
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");
-    response.getWriter().println(json);
+    response.getWriter().println(commentDataJSON);
   }
 
   @Override
