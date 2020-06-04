@@ -9,7 +9,7 @@
     <title>Kathy's Portfolio</title>
   </head>
 
-  <body>
+  <body onload="addComments()">
     <nav id="nav" role="navigation" aria-label="navigation bar">
       <a href="/gallery.html">Photo Gallery</a>
       <a href="/blogs.html">Blog Posts</a>
@@ -19,8 +19,6 @@
     <!--- Main section includes primary content in portfolio -->
     <main>
       <h1>Kathy's Portfolio</h1>
-      <button onclick="addQuote()">Say Hello :)</button>
-      <ul id="quote-container"></ul>
       <p>Welcome to my homepage. My name is Feiyang Yu (Kathy). I'm a Computer Science major at
          Columbia University. I'm incredibly excited for the STEP internship program!</p>
       <p>In my free time, I <em>love</em> watching television series, and exploring food and restaurants!</p>
@@ -89,7 +87,7 @@
 
     </main>
 
-    <!--- Contact info includes LinkedIn, GitHub and feedback form submission -->
+    <!--- Contact info includes LinkedIn, GitHub and user comment form submission -->
     <div class="contact_info">
       <h3 id="contact_me">Contact Me</h3>
       <a href="https://www.linkedin.com/in/feiyang-yu-9818b7169">
@@ -98,10 +96,10 @@
       <a href="https://www.github.com/KathyFeiyang">
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
-      <p><b>Submit feedback :)</b></p>
-      <form id="feedback-form" onsubmit="presentFeedbackReceipt()" action="/index.html#contact_me">
+      <p><b>Submit your comments :)</b></p>
+      <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
         <label for="message">Enter your message here...<br></label>
-        <textarea id="message" name="message" required placeholder="Your feedback..."></textarea><br>
+        <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
         <label for="message-sender-name">Your name [required]:</label>
         <input type="text" id="message-sender-name" name="message-sender-name" required
                placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
@@ -110,6 +108,14 @@
                placeholder="example@gmail.com"><br>
         <input class="button" type="submit" value="Submit">
       </form>
+      <p><b>Comment History</b></p>
+      <label for="maxCommentsToDisplay">Maximum number of entries to show in comment history:</label>
+      <input type="number" id="maxCommentsToDisplay" name="maxCommentsToDisplay"
+             onchange="addComments()" min="0" max="" value="">
+      <p>(The latest comments are displayed on top.)</p>
+      <ul id="comment-container"></ul>
+      <button onclick="addComments()">Refresh</button>
+      <button onclick="deleteCommentHistory()">Delete comment history</button>
     </div>
 
     <div class="linking">
@@ -118,7 +124,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-05-29</time>.</footer>
+    <footer>Last modified on <time>2020-06-03</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>

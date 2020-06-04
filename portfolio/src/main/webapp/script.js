@@ -34,45 +34,81 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a collection of quotes to the page.
+ * Fetches and adds a history of comments, and the theoretical maximum and default
+ * number of comments, to the page.
  */
-async function addQuote() {
-  // Fetch quotes as JSON from servlet.
-  const response = await fetch('/data');
-  const quotesJSON = await response.json();
-  console.log('CONFIRM: addQuote() fetched: ' + quotesJSON);
+async function addComments() {
+  // Obtain user input of maximum number of comments to display.
+  const maxCommentsToDisplay = document.getElementById('maxCommentsToDisplay').value;
 
-  // Format quotes as items in a HTML list structure.
-  const quotesHTML = document.getElementById('quote-container');
-  document.getElementById('quote-container').innerHTML = '';
+  // Fetch the comment history, in the specified length, and other metadata,
+  // as JSON from the Java servlet.
+  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}`);
+  const commentDataJson = await response.json();
+  const comments = commentDataJson.comments;
+  const totalComments = commentDataJson.totalComments;
+  const defaultMaxComments = commentDataJson.defaultMaxComments;
+  console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
-  for (let i = 0; i < quotesJSON.length; i++) {
-    // Create a quote's corresponding list item HTML element.
-    const quoteItem = document.createElement('li');
-    quoteItem.innerText = quotesJSON[i];
-
-    // Add list item to list structure.
-    quotesHTML.appendChild(quoteItem);
+  // Format each comment as an item in a HTML list structure.
+  const commentHistoryHTML = document.getElementById('comment-container');
+  commentHistoryHTML.innerHTML = '';
+  for (let i = 0; i < comments.length; i++) {
+    const commentFormatted = helperFormatComment(comments[i]);
+    const commentItem = document.createElement('li');
+    commentItem.innerText = commentFormatted;
+    commentHistoryHTML.appendChild(commentItem);
   }
+
+  // Set the theoretical maximum and default number of comments for the input field.
+  const maxCommentsToDisplayInputField = document.getElementById("maxCommentsToDisplay");
+  maxCommentsToDisplayInputField.setAttribute("max", totalComments);
+  maxCommentsToDisplayInputField.setAttribute("value", defaultMaxComments);
 }
 
 /**
- * Presents a receipt for getting user form feedback in a pop-up window.
+ * Helper function to construct a formatted String of a comment.
  */
-function presentFeedbackReceipt() {
-  // Obtain user input feedback content, name and email.
-  const formElements = document.getElementById('feedback-form').elements;
-  const userFeedback = formElements[0].value;
+function helperFormatComment(commentJson) {
+  return `"${commentJson.message}" -- ${commentJson.name} @ ${commentJson.email}`;
+}
+
+/**
+ * Deletes the complete comment history stored in the backend database.
+ */
+async function deleteCommentHistory() {
+  // Make final confirmation with user about whether to delete the comment history.
+  const confirmed = window.confirm('Please click on "OK" to delete the comment history;' +
+                                   ' otherwise please click on "Cancel".\n');
+  if (!confirmed) {
+    return;
+  }
+
+  // Send POST request to backend server to delete comment history.
+  const POSTRequest = new Request('/delete-data', {method: 'POST'});
+  await fetch(POSTRequest);
+
+  // Fetch the now-empty comment history from the server.
+  addComments();
+}
+
+/**
+ * Presents a receipt for getting a user comment, in a pop-up window.
+ */
+function presentPopupCommentReceipt() {
+  // Obtain user input comment content, name and email.
+  const formElements = document.getElementById('comment-form').elements;
+  const userComment = formElements[0].value;
   const userName = formElements[1].value;
   const userEmail = formElements[2].value;
 
-  // Construct feedback receipt.
+  // Construct user comment receipt.
   const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
                   `We have recorded the following:\n` +
-                  `    *Message: "${userFeedback}"\n` +
+                  `    *Message: "${userComment}"\n` +
                   `    *Contact Information: ${userEmail}\n`;
 
-  // Present feedback receipt in a pop-up window.
+  // Present comment receipt in a pop-up window.
   window.alert(receipt);
 }
 
@@ -108,19 +144,19 @@ function executeConsoleCode() {
 
 /**
  * Searches for and displays top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
- *   without reloading the page.
+ * without reloading the page.
  */
 function searchWikipedia() {
   helperSearchWikipedia()
-    .then(wikipediaJSON => {
+    .then(wikipediaJson => {
       const wikipediaContainer = document.getElementById('wikipedia-container');
       wikipediaContainer.innerText = 'Top 3 Search Results:\n';
 
       // Display Wikipedia search phrase matches and corresponding URLs on the page.
-      for (let i = 0; i < wikipediaJSON[1].length; i++) {
+      for (let i = 0; i < wikipediaJson[1].length; i++) {
         const searchResult = document.createElement('a');
-        const resultText = document.createTextNode(wikipediaJSON[1][i]);
-        searchResult.href = wikipediaJSON[3][i];
+        const resultText = document.createTextNode(wikipediaJson[1][i]);
+        searchResult.href = wikipediaJson[3][i];
         // Embed result phrase into URL anchor.
         searchResult.appendChild(resultText);
         // Add combined result of text and URL to the page.
@@ -141,8 +177,8 @@ async function helperSearchWikipedia() {
 
   // Fetch HTTP response for search result.
   const wikipediaResponse = await fetch(wikipediaURL, {mode: 'cors'});
-  const wikipediaJSON = await wikipediaResponse.json();
-  return wikipediaJSON;
+  const wikipediaJson = await wikipediaResponse.json();
+  return wikipediaJson;
 }
 
 /**
