@@ -87,8 +87,11 @@ nav,
 }
 
 /* Warning */
+#invalid-max-comments,
+#invalid-page-id,
 #is-latest-input-dangerous {
   color: red;
+  font-size: 25px;
 }
 
 /* Specific headlines */

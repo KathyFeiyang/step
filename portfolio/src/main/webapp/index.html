@@ -112,9 +112,11 @@
       <p><b>Comment History</b></p>
       <ul id="comment-container"></ul>
       <div id="pagination">
-        <label for="max-comments-to-display">Maximum number of entries to show on one page of the comment history:</label>
-        <input type="number" id="max-comments-to-display" name="max-comments-to-display" onchange="addComments(1)"
-               min="0" max="" value="">
+        <label for="max-comments-to-display">Maximum number of entries to show on one page of the
+                                             comment history:</label>
+        <input type="number" id="max-comments-to-display" name="max-comments-to-display" 
+               onchange="addComments(1)" min="0" max="" value="">
+        <div id="invalid-max-comments"></div>
         <p>Currently on page <b id="current-page-id"></b>. (The latest comments are displayed on top.)</p>
         <button id="first" onclick="addComments(this.id)">&lt;&lt;</button>
         <button id="prev" onclick="addComments(this.id)">&lt;</button>
@@ -122,7 +124,8 @@
         <button id="last" onclick="addComments(this.id)">&gt;&gt;</button>
         <label for="go-to-page-id">Go to page </label>
         <input type="number" id="go-to-page-id" name="go-to-page-id" onchange="addComments(this.value)"
-               min="0" max="" value="1">
+               min="1" max="" value="">
+        <div id="invalid-page-id"></div>
         <br><br>
       </div>
       <button onclick="deleteCommentHistory()">Delete comment history</button>

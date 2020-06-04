@@ -36,7 +36,8 @@ function addCyclicGreeting() {
 /**
  * Fetches and adds a history of comments, and the theoretical maximum and default
  * number of comments, the total number of pages, and the current page ID, to the page.
- * Show a warning if the latest user input may be a XSS attack.
+ * Show a warning if the user input value of the number of comments to display or
+ * page ID is invalid, or if the latest user input may be a XSS attack.
  */
 async function addComments(pageId) {
   // Obtain user input of maximum number of comments to display.
@@ -49,9 +50,12 @@ async function addComments(pageId) {
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
+  const invalidMaxComments = commentDataJson.invalidMaxComments;
   const totalPages = commentDataJson.totalPages;
   const currentPageId = commentDataJson.currentPageId;
+  const invalidPageId = commentDataJson.invalidPageId;
   const isLatestInputDangerous = commentDataJson.isLatestInputDangerous;
+
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -78,14 +82,15 @@ async function addComments(pageId) {
   // Show the ID of the currently displayed page.
   document.getElementById('current-page-id').innerText = currentPageId;
 
-  // If the latest user form submission is potentially dangerous, show a warning.
-  const latestInputWarning = document.getElementById('is-latest-input-dangerous');
-  if (isLatestInputDangerous) {
-    latestInputWarning.innerText = 'Your submission was considered to be a potential XSS attack.\n' +
-                                   'It would not be stored. Please try again. Thank you!';
-  } else {
-    latestInputWarning.innerText = '';
-  }
+  // If the user input value of the number of comments to display or page ID is invalid,
+  // or if the latest user form submission is potentially dangerous, show a text warning.
+  helperAddInvalidInputWarning('invalid-max-comments', invalidMaxComments,
+                               'Invalid input: expected value to be positive.\n');
+  helperAddInvalidInputWarning('invalid-page-id', invalidPageId,
+                               `Invalid input: expected value to be in range [1, ${totalPages}].\n`);
+  helperAddInvalidInputWarning('is-latest-input-dangerous', isLatestInputDangerous,
+                               'Your submission was considered to be a potential XSS attack.\n' +
+                               'It would not be stored. Please try again. Thank you!');
 }
 
 /**
@@ -93,6 +98,18 @@ async function addComments(pageId) {
  */
 function helperFormatComment(commentJson) {
   return `"${commentJson.message}" -- ${commentJson.name} @ ${commentJson.email}`;
+}
+
+/**
+ * Add warning regarding input value range to page, if necessary.
+ */
+function helperAddInvalidInputWarning(elementId, shouldAddWarning, warningContent) {
+  const warning = document.getElementById(elementId);
+  if (shouldAddWarning) {
+    warning.innerText = warningContent;
+  } else {
+    warning.innerText = '';
+  }
 }
 
 /**
@@ -111,7 +128,7 @@ async function deleteCommentHistory() {
   await fetch(POSTRequest);
 
   // Fetch the now-empty comment history from the server.
-  addComments();
+  addComments(1);
 }
 
 /**
