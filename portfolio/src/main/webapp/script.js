@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+//Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,19 +35,21 @@ function addCyclicGreeting() {
 
 /**
  * Fetches and adds a history of comments, and the theoretical maximum and default
- * number of comments, to the page.
+ * number of comments, the total number of pages, and the current page ID, to the page.
  */
-async function addComments() {
+async function addComments(pageId) {
   // Obtain user input of maximum number of comments to display.
-  const maxCommentsToDisplay = document.getElementById('maxCommentsToDisplay').value;
+  const maxCommentsToDisplay = document.getElementById('max-comments-to-display').value;
 
   // Fetch the comment history, in the specified length, and other metadata,
   // as JSON from the Java servlet.
-  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}`);
+  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
   const commentDataJson = await response.json();
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
+  const totalPages = commentDataJson.totalPages;
+  const currentPageId = commentDataJson.currentPageId;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -60,10 +62,19 @@ async function addComments() {
     commentHistoryHTML.appendChild(commentItem);
   }
 
-  // Set the theoretical maximum and default number of comments for the input field.
-  const maxCommentsToDisplayInputField = document.getElementById("maxCommentsToDisplay");
-  maxCommentsToDisplayInputField.setAttribute("max", totalComments);
-  maxCommentsToDisplayInputField.setAttribute("value", defaultMaxComments);
+  // Set the theoretical maximum and default for the number of comments to display in the
+  // input field for number of comments per page.
+  const maxCommentsToDisplayInputField = document.getElementById('max-comments-to-display');
+  maxCommentsToDisplayInputField.setAttribute('max', totalComments);
+  maxCommentsToDisplayInputField.setAttribute('value', defaultMaxComments);
+
+  // Set the theoretical maximum and current page ID in the page ID input field.
+  const goToPageIdInputField = document.getElementById('go-to-page-id');
+  goToPageIdInputField.setAttribute('max', totalPages);
+  goToPageIdInputField.setAttribute('value', currentPageId);
+
+  // Show the ID of the currently displayed page.
+  document.getElementById('current-page-id').innerText = currentPageId;
 }
 
 /**

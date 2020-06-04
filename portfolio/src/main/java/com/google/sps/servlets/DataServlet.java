@@ -23,6 +23,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 public class DataServlet extends HttpServlet {
   private UserComment comment;
   private static final int DEFAULT_MAX_COMMENTS = 10;
+  private int currentPageId = 1;
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -42,9 +44,11 @@ public class DataServlet extends HttpServlet {
     Query commentHistoryQuery = new Query("UserComment").addSort("timestamp", SortDirection.DESCENDING);
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
-    int totalComments = commentHistory.countEntities(FetchOptions.Builder.withDefaults());
+    List<Entity> commentHistoryList = commentHistory.asList(FetchOptions.Builder.withDefaults());
+    int totalComments = commentHistoryList.size();
+    int totalPages;
 
-    // Obtain maximum number of comments to display. If the number is invalid, take on the default value.
+    // Obtain the maximum number of comments to display. If the number is invalid, take the default value.
     int maxCommentsToDisplay;
     try {
       maxCommentsToDisplay = Integer.parseInt(request.getParameter("maxCommentsToDisplay"));
@@ -55,24 +59,49 @@ public class DataServlet extends HttpServlet {
       maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
     }
 
-    // Convert comment Datastore entity into UserComment objects.
-    List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
-    int commentCounter = 0;
-    for (Entity commentEntity : commentHistory.asIterable()) {
-      if (commentCounter == maxCommentsToDisplay) {
-        break;
+    // Obtain the page ID of comment history to display.
+    String pageIdParam = request.getParameter("pageId");
+    totalPages = (int) Math.ceil(((double) totalComments) / maxCommentsToDisplay);
+    try {
+      currentPageId = Integer.parseInt(pageIdParam);
+      // If the numeric input of page ID is invalid, set to 1.
+      currentPageId = Math.max(1, currentPageId);
+    } catch (NumberFormatException e) {
+      if (pageIdParam.equals("first")) {
+        currentPageId = 1;
+      } else if (pageIdParam.equals("last")) {
+        currentPageId = totalPages;
+      } else if (pageIdParam.equals("prev") && currentPageId > 1) {
+        currentPageId--;
+      } else if (pageIdParam.equals("next") && currentPageId < totalPages) {
+        currentPageId++;
       }
-      String message = (String) commentEntity.getProperty("message");
-      String name = (String) commentEntity.getProperty("name");
-      String email = (String) commentEntity.getProperty("email");
-
-      UserComment commentItem = new UserComment(message, name, email);
-      comments.add(commentItem);
-      commentCounter++;
     }
 
-    // Convert a history of comment objects, the total number of comments and default number, to JSON format.
-    commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS);
+    // Convert comment Datastore entity into UserComment objects.
+    List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
+
+    // Calculate the index of starting and ending comments.
+    int startCommentIndex = (currentPageId - 1) * maxCommentsToDisplay;
+    int endCommentIndex = currentPageId * maxCommentsToDisplay;
+    // Check if any comments are within the valid index range; if so, proceed to collect comments.
+    if (startCommentIndex < totalComments) {
+      endCommentIndex = Math.min(endCommentIndex, totalComments);
+      for (int commentIndex = startCommentIndex; commentIndex < endCommentIndex; commentIndex++) {
+        Entity commentEntity = commentHistoryList.get(commentIndex);
+        String message = (String) commentEntity.getProperty("message");
+        String name = (String) commentEntity.getProperty("name");
+        String email = (String) commentEntity.getProperty("email");
+
+        UserComment commentItem = new UserComment(message, name, email);
+        comments.add(commentItem);
+      }
+    }
+
+    // Package a history of comment objects, the total number of comments, the default number of
+    // comments, the total number of pages, and the current page ID, to JSON format.
+    commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS,
+                                                            totalPages, currentPageId);
     Gson gson = new Gson();
     String commentDataJson = gson.toJson(commentData);
 
@@ -111,12 +140,17 @@ public class DataServlet extends HttpServlet {
     private List<UserComment> comments;
     private int totalComments;
     private int defaultMaxComments;
+    private int totalPages;
+    private int currentPageId;
 
     public commentDataPackage(List<UserComment> inputComments, int inputTotalComments,
-                              int inputDefaultMaxComments) {
+                              int inputDefaultMaxComments, int inputTotalPages,
+                              int inputCurrentPageId) {
       this.comments = inputComments;
       this.totalComments = inputTotalComments;
       this.defaultMaxComments = inputDefaultMaxComments;
+      this.totalPages = inputTotalPages;
+      this.currentPageId = inputCurrentPageId;
     }
   }
 }

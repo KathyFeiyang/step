@@ -9,7 +9,7 @@
     <title>Kathy's Portfolio</title>
   </head>
 
-  <body onload="addComments()">
+  <body onload="addComments(1)">
     <nav id="nav" role="navigation" aria-label="navigation bar">
       <a href="/gallery.html">Photo Gallery</a>
       <a href="/blogs.html">Blog Posts</a>
@@ -109,12 +109,21 @@
         <input class="button" type="submit" value="Submit">
       </form>
       <p><b>Comment History</b></p>
-      <label for="maxCommentsToDisplay">Maximum number of entries to show in comment history:</label>
-      <input type="number" id="maxCommentsToDisplay" name="maxCommentsToDisplay"
-             onchange="addComments()" min="0" max="" value="">
-      <p>(The latest comments are displayed on top.)</p>
       <ul id="comment-container"></ul>
-      <button onclick="addComments()">Refresh</button>
+      <div id="pagination">
+        <label for="max-comments-to-display">Maximum number of entries to show on one page of the comment history:</label>
+        <input type="number" id="max-comments-to-display" name="max-comments-to-display" onchange="addComments(1)"
+               min="0" max="" value="">
+        <p>Currently on page <b id="current-page-id"></b>. (The latest comments are displayed on top.)</p>
+        <button id="first" onclick="addComments(this.id)">&lt;&lt;</button>
+        <button id="prev" onclick="addComments(this.id)">&lt;</button>
+        <button id="next" onclick="addComments(this.id)">&gt;</button>
+        <button id="last" onclick="addComments(this.id)">&gt;&gt;</button>
+        <label for="go-to-page-id">Go to page </label>
+        <input type="number" id="go-to-page-id" name="go-to-page-id" onchange="addComments(this.value)"
+               min="0" max="" value="1">
+        <br><br>
+      </div>
       <button onclick="deleteCommentHistory()">Delete comment history</button>
     </div>
 
@@ -124,7 +133,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-06-03</time>.</footer>
+    <footer>Last modified on <time>2020-06-04</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>
