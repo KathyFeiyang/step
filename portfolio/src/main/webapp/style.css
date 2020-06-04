@@ -86,6 +86,11 @@ nav,
   padding: 30px;
 }
 
+/* Warning */
+#is-latest-input-dangerous {
+  color: red;
+}
+
 /* Specific headlines */
 #food,
 #cuteness,

@@ -36,6 +36,7 @@ function addCyclicGreeting() {
 /**
  * Fetches and adds a history of comments, and the theoretical maximum and default
  * number of comments, the total number of pages, and the current page ID, to the page.
+ * Show a warning if the latest user input may be a XSS attack.
  */
 async function addComments(pageId) {
   // Obtain user input of maximum number of comments to display.
@@ -50,6 +51,7 @@ async function addComments(pageId) {
   const defaultMaxComments = commentDataJson.defaultMaxComments;
   const totalPages = commentDataJson.totalPages;
   const currentPageId = commentDataJson.currentPageId;
+  const isLatestInputDangerous = commentDataJson.isLatestInputDangerous;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -75,6 +77,15 @@ async function addComments(pageId) {
 
   // Show the ID of the currently displayed page.
   document.getElementById('current-page-id').innerText = currentPageId;
+
+  // If the latest user form submission is potentially dangerous, show a warning.
+  const latestInputWarning = document.getElementById('is-latest-input-dangerous');
+  if (isLatestInputDangerous) {
+    latestInputWarning.innerText = 'Your submission was considered to be a potential XSS attack.\n' +
+                                   'It would not be stored. Please try again. Thank you!';
+  } else {
+    latestInputWarning.innerText = '';
+  }
 }
 
 /**

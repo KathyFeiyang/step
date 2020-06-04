@@ -12,6 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Copyright (c) 2015 Jeff Ichnowski
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//     * Redistributions of source code must retain the above
+//       copyright notice, this list of conditions and the following
+//       disclaimer.
+//
+//     * Redistributions in binary form must reproduce the above
+//       copyright notice, this list of conditions and the following
+//       disclaimer in the documentation and/or other materials
+//       provided with the distribution.
+//
+//     * Neither the name of the OWASP nor the names of its
+//       contributors may be used to endorse or promote products
+//       derived from this software without specific prior written
+//       permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+// OF THE POSSIBILITY OF SUCH DAMAGE.
+
 package com.google.sps.servlets;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -31,12 +65,14 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.owasp.encoder.Encode;
 
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
   private UserComment comment;
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private int currentPageId = 1;
+  private boolean isLatestInputDangerous = false;
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -99,9 +135,11 @@ public class DataServlet extends HttpServlet {
     }
 
     // Package a history of comment objects, the total number of comments, the default number of
-    // comments, the total number of pages, and the current page ID, to JSON format.
+    // comments, the total number of pages, the current page ID, and whether the latest user
+    // input was dangerous and rejected, to JSON format.
     commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS,
-                                                            totalPages, currentPageId);
+                                                            totalPages, currentPageId, isLatestInputDangerous);
+    isLatestInputDangerous = false;
     Gson gson = new Gson();
     String commentDataJson = gson.toJson(commentData);
 
@@ -116,6 +154,13 @@ public class DataServlet extends HttpServlet {
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
     String email = request.getParameter("message-sender-email");
+    // Refrain from adding to the database if the user input is a potentially XSS attack.
+    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name)) ||
+        !email.equals(Encode.forHtml(email))) {
+      isLatestInputDangerous = true;
+      response.sendRedirect("/index.html#contact_me");
+      return;
+    }
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
@@ -142,15 +187,17 @@ public class DataServlet extends HttpServlet {
     private int defaultMaxComments;
     private int totalPages;
     private int currentPageId;
+    private boolean isLatestInputDangerous;
 
     public commentDataPackage(List<UserComment> inputComments, int inputTotalComments,
                               int inputDefaultMaxComments, int inputTotalPages,
-                              int inputCurrentPageId) {
+                              int inputCurrentPageId, boolean inputIsLatestInputDangerous) {
       this.comments = inputComments;
       this.totalComments = inputTotalComments;
       this.defaultMaxComments = inputDefaultMaxComments;
       this.totalPages = inputTotalPages;
       this.currentPageId = inputCurrentPageId;
+      this.isLatestInputDangerous = inputIsLatestInputDangerous;
     }
   }
 }
