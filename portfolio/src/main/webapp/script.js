@@ -47,7 +47,7 @@ async function addComments() {
   const commentDataJSON = await response.json();
   const comments = commentDataJSON.comments;
   const totalComments = commentDataJSON.totalComments;
-  const defaultComments = commentDataJSON.defaultComments;
+  const defaultMaxComments = commentDataJSON.defaultMaxComments;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -63,7 +63,7 @@ async function addComments() {
   // Set the theoretical maximum and default number of comments for the input field.
   const maxCommentsToDisplayInputField = document.getElementById("maxCommentsToDisplay");
   maxCommentsToDisplayInputField.setAttribute("max", totalComments);
-  maxCommentsToDisplayInputField.setAttribute("value", defaultComments);
+  maxCommentsToDisplayInputField.setAttribute("value", defaultMaxComments);
 }
 
 /**

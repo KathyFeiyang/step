@@ -110,13 +110,13 @@ public class DataServlet extends HttpServlet {
   class commentDataPackage {
     private List<UserComment> comments;
     private int totalComments;
-    private int defaultComments;
+    private int defaultMaxComments;
 
     public commentDataPackage(List<UserComment> inputComments, int inputTotalComments,
-                              int inputDefaultComments) {
+                              int inputDefaultMaxComments) {
       this.comments = inputComments;
       this.totalComments = inputTotalComments;
-      this.defaultComments = inputDefaultComments;
+      this.defaultMaxComments = inputDefaultMaxComments;
     }
   }
 }
