@@ -74,11 +74,11 @@ public class DataServlet extends HttpServlet {
     // Convert a history of comment objects, the total number of comments and default number, to JSON format.
     commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS);
     Gson gson = new Gson();
-    String commentDataJSON = gson.toJson(commentData);
+    String commentDataJson = gson.toJson(commentData);
 
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");
-    response.getWriter().println(commentDataJSON);
+    response.getWriter().println(commentDataJson);
   }
 
   @Override

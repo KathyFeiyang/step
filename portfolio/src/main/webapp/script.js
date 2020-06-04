@@ -44,10 +44,10 @@ async function addComments() {
   // Fetch the comment history, in the specified length, and other metadata,
   // as JSON from the Java servlet.
   const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}`);
-  const commentDataJSON = await response.json();
-  const comments = commentDataJSON.comments;
-  const totalComments = commentDataJSON.totalComments;
-  const defaultMaxComments = commentDataJSON.defaultMaxComments;
+  const commentDataJson = await response.json();
+  const comments = commentDataJson.comments;
+  const totalComments = commentDataJson.totalComments;
+  const defaultMaxComments = commentDataJson.defaultMaxComments;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -69,8 +69,8 @@ async function addComments() {
 /**
  * Helper function to construct a formatted String of a comment.
  */
-function helperFormatComment(commentJSON) {
-  return `"${commentJSON.message}" -- ${commentJSON.name} @ ${commentJSON.email}`;
+function helperFormatComment(commentJson) {
+  return `"${commentJson.message}" -- ${commentJson.name} @ ${commentJson.email}`;
 }
 
 /**
@@ -148,15 +148,15 @@ function executeConsoleCode() {
  */
 function searchWikipedia() {
   helperSearchWikipedia()
-    .then(wikipediaJSON => {
+    .then(wikipediaJson => {
       const wikipediaContainer = document.getElementById('wikipedia-container');
       wikipediaContainer.innerText = 'Top 3 Search Results:\n';
 
       // Display Wikipedia search phrase matches and corresponding URLs on the page.
-      for (let i = 0; i < wikipediaJSON[1].length; i++) {
+      for (let i = 0; i < wikipediaJson[1].length; i++) {
         const searchResult = document.createElement('a');
-        const resultText = document.createTextNode(wikipediaJSON[1][i]);
-        searchResult.href = wikipediaJSON[3][i];
+        const resultText = document.createTextNode(wikipediaJson[1][i]);
+        searchResult.href = wikipediaJson[3][i];
         // Embed result phrase into URL anchor.
         searchResult.appendChild(resultText);
         // Add combined result of text and URL to the page.
@@ -177,8 +177,8 @@ async function helperSearchWikipedia() {
 
   // Fetch HTTP response for search result.
   const wikipediaResponse = await fetch(wikipediaURL, {mode: 'cors'});
-  const wikipediaJSON = await wikipediaResponse.json();
-  return wikipediaJSON;
+  const wikipediaJson = await wikipediaResponse.json();
+  return wikipediaJson;
 }
 
 /**
