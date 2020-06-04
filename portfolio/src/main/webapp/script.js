@@ -35,19 +35,19 @@ function addCyclicGreeting() {
 
 /**
  * Fetches and adds a history of comments, and the theoretical maximum and default
- *   number of comments, to the page.
+ * number of comments, to the page.
  */
 async function addComments() {
   // Obtain user input of maximum number of comments to display.
-  const maxN = document.getElementById('maxN').value;
+  const maxCommentsToDisplay = document.getElementById('maxCommentsToDisplay').value;
 
   // Fetch the comment history, in the specified length, and other metadata,
-  //   as JSON from the Java servlet.
-  const response = await fetch(`/data?maxN=${maxN}`);
+  // as JSON from the Java servlet.
+  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}`);
   const commentDataJSON = await response.json();
-  const comments = commentDataJSON[0];
-  const totalComments = commentDataJSON[1];
-  const defaultComments = commentDataJSON[2];
+  const comments = commentDataJSON.comments;
+  const totalComments = commentDataJSON.totalComments;
+  const defaultComments = commentDataJSON.defaultComments;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -61,9 +61,9 @@ async function addComments() {
   }
 
   // Set the theoretical maximum and default number of comments for the input field.
-  const maxNInputField = document.getElementById("maxN");
-  maxNInputField.setAttribute("max", totalComments);
-  maxNInputField.setAttribute("value", defaultComments);
+  const maxCommentsToDisplayInputField = document.getElementById("maxCommentsToDisplay");
+  maxCommentsToDisplayInputField.setAttribute("max", totalComments);
+  maxCommentsToDisplayInputField.setAttribute("value", defaultComments);
 }
 
 /**
@@ -144,7 +144,7 @@ function executeConsoleCode() {
 
 /**
  * Searches for and displays top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
- *   without reloading the page.
+ * without reloading the page.
  */
 function searchWikipedia() {
   helperSearchWikipedia()

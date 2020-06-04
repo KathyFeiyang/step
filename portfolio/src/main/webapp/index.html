@@ -109,10 +109,10 @@
         <input class="button" type="submit" value="Submit">
       </form>
       <p><b>Comment History</b></p>
-      <label for="maxN">Maximum number of entries to show in comment history:</label>
-      <input type="number" id="maxN" name="maxN" onchange="addComments()"
-             min="0" max="" value="">
-      <p>(The latest comments are displayed on the top.)</p>
+      <label for="maxCommentsToDisplay">Maximum number of entries to show in comment history:</label>
+      <input type="number" id="maxCommentsToDisplay" name="maxCommentsToDisplay"
+             onchange="addComments()" min="0" max="" value="">
+      <p>(The latest comments are displayed on top.)</p>
       <ul id="comment-container"></ul>
       <button onclick="addComments()">Refresh</button>
       <button onclick="deleteCommentHistory()">Delete comment history</button>

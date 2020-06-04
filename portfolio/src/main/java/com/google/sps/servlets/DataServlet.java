@@ -45,21 +45,21 @@ public class DataServlet extends HttpServlet {
     int totalComments = commentHistory.countEntities(FetchOptions.Builder.withDefaults());
 
     // Obtain maximum number of comments to display. If the number is invalid, take on the default value.
-    int maxN;
+    int maxCommentsToDisplay;
     try {
-      maxN = Integer.parseInt(request.getParameter("maxN"));
-      if (maxN < 0) {
-        maxN = DEFAULT_MAX_COMMENTS;
+      maxCommentsToDisplay = Integer.parseInt(request.getParameter("maxCommentsToDisplay"));
+      if (maxCommentsToDisplay < 0) {
+        maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
       }
     } catch (NumberFormatException e) {
-      maxN = DEFAULT_MAX_COMMENTS;
+      maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
     }
 
     // Convert comment Datastore entity into UserComment objects.
-    List<UserComment> comments = new ArrayList<>(maxN);
+    List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
     int commentCounter = 0;
     for (Entity commentEntity : commentHistory.asIterable()) {
-      if (commentCounter == maxN) {
+      if (commentCounter == maxCommentsToDisplay) {
         break;
       }
       String message = (String) commentEntity.getProperty("message");
@@ -72,10 +72,7 @@ public class DataServlet extends HttpServlet {
     }
 
     // Convert a history of comment objects, the total number of comments and default number, to JSON format.
-    Collection<Object> commentData = new ArrayList<>(2);
-    commentData.add(comments);
-    commentData.add(totalComments);
-    commentData.add(DEFAULT_MAX_COMMENTS);
+    commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS);
     Gson gson = new Gson();
     String commentDataJSON = gson.toJson(commentData);
 
@@ -108,6 +105,19 @@ public class DataServlet extends HttpServlet {
 
     // Redirect back to the homepage's "Contact Me" section.
     response.sendRedirect("/index.html#contact_me");
+  }
+
+  class commentDataPackage {
+    private List<UserComment> comments;
+    private int totalComments;
+    private int defaultComments;
+
+    public commentDataPackage(List<UserComment> inputComments, int inputTotalComments,
+                              int inputDefaultComments) {
+      this.comments = inputComments;
+      this.totalComments = inputTotalComments;
+      this.defaultComments = inputDefaultComments;
+    }
   }
 }
 
