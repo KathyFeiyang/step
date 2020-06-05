@@ -94,33 +94,17 @@ public class DataServlet extends HttpServlet {
     int totalPages = (int) Math.ceil(((double) totalComments) / maxCommentsToDisplay);
     this.computeAndSetCurrentPageId(pageIdStr, totalPages);
 
-    // Convert comment Datastore entity into UserComment objects.
-    List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
-
-    // Calculate the index of starting and ending comments.
-    int startCommentIndex = (currentPageId - 1) * maxCommentsToDisplay;
-    int endCommentIndex = currentPageId * maxCommentsToDisplay;
-    // Check if any comments are within the valid index range; if so, proceed to collect comments.
-    if (startCommentIndex >= 0 && startCommentIndex < totalComments) {
-      endCommentIndex = Math.min(endCommentIndex, totalComments);
-      for (int commentIndex = startCommentIndex; commentIndex < endCommentIndex; commentIndex++) {
-        Entity commentEntity = commentHistoryList.get(commentIndex);
-        String message = (String) commentEntity.getProperty("message");
-        String name = (String) commentEntity.getProperty("name");
-        String email = (String) commentEntity.getProperty("email");
-        String petPreference = (String) commentEntity.getProperty("petPreference");
-
-        UserComment commentItem = new UserComment(message, name, email, petPreference);
-        comments.add(commentItem);
-      }
-    }
+    // Obtain the desired comments according to the specified number of comments per page and
+    // page ID.
+    List<UserComment> comments = this.getSpecifiedComments(maxCommentsToDisplay, totalComments,
+                                                           commentHistoryList);
 
     // Package a history of comment objects, the total number of comments, the default number of
     // comments, the total number of pages, the current page ID, and whether the latest user
     // input was dangerous and rejected, whether the user input values of number of comments to 
     // display & page ID are invalid, to JSON format.
     CommentDataPackage commentData;
-    commentData = new CommentDataPackage(comments, totalComments, totalPages, currentPageId);
+    commentData = new CommentDataPackage(comments, totalComments, totalPages, this.currentPageId);
     Gson gson = new Gson();
     String commentDataJson = gson.toJson(commentData);
     this.invalidInputFlags.resetInvalidInputFlags();
@@ -134,8 +118,8 @@ public class DataServlet extends HttpServlet {
   * Computes the maximum number of comments to display considering the possible range. Set the
   * invalid input flag if the original user input is invalid.
   *
-  * @param maxCommentsToDisplayStr raw user input of the maximum number of comments to display
-  * @return parsed and safe maximum comments to display
+  * @param maxCommentsToDisplayStr the raw user input of the maximum number of comments to display
+  * @return the parsed and safe maximum comments to display
   */
   private int computeMaxCommentsToDisplay(String maxCommentsToDisplayStr) {
     int maxCommentsToDisplay;
@@ -160,46 +144,76 @@ public class DataServlet extends HttpServlet {
   * Computes and sets the current page ID considering the possible range. Set the invalid input
   * flag if the original user input is invalid.
   *
-  * @param pageIdStr raw user input of the page ID
-  * @param totalPages total number of pages in the database, given the number of comments per page
+  * @param pageIdStr the raw user input of the page ID
+  * @param totalPages the total number of pages in the database, given the number of comments per page
   */
   private void computeAndSetCurrentPageId(String pageIdStr, int totalPages) {
     try {
-      currentPageId = Integer.parseInt(pageIdStr);
+      this.currentPageId = Integer.parseInt(pageIdStr);
       // If the numeric input of page ID is in an invalid range, set the page ID to the closest
       // valid value, and set the invalid input flag.
-      if (currentPageId < 1) {
-        currentPageId = 1;
+      if (this.currentPageId < 1) {
+        this.currentPageId = 1;
         this.invalidInputFlags.setInvalidPageId();
-      } else if (currentPageId > totalPages) {
+      } else if (this.currentPageId > totalPages) {
         if (totalPages != 0) {
-          currentPageId = totalPages;
+          this.currentPageId = totalPages;
           this.invalidInputFlags.setInvalidPageId();
         } else {
           // If there are no comments in the database, set the page ID to 1.
-          currentPageId = 1;
+          this.currentPageId = 1;
         }
       }
     } catch (NumberFormatException e) {
       switch (pageIdStr) {
         case "first":
-          currentPageId = 1;
+          this.currentPageId = 1;
           break;
         case "last":
           // check and handle the special case of zero pages.
-          currentPageId = Math.max(totalPages, 1);
+          this.currentPageId = Math.max(totalPages, 1);
           break;
         case "prev":
-          currentPageId = Math.max(1, currentPageId - 1);
+          this.currentPageId = Math.max(1, this.currentPageId - 1);
           break;
         case "next":
           // check and handle the special case of zero pages.
-          currentPageId = Math.min(Math.max(totalPages, 1), currentPageId + 1);
+          this.currentPageId = Math.min(Math.max(totalPages, 1), this.currentPageId + 1);
           break;
         default:
           this.invalidInputFlags.setInvalidPageId();
       }
     }
+  }
+
+  /**
+  * Collects the desired comments according to the specified number of comments per page and
+  * page ID; converts Datastore Entities into UserComments.
+  *
+  * @param maxCommentsToDisplayStr the maximum number of comments to display
+  * @param totalComments the total number of comments in the database
+  * @param commentHistoryList the complete list of comment Entities in the database.
+  * @return list of desired comments as UserComment objects.
+  */
+  private List<UserComment> getSpecifiedComments(int maxCommentsToDisplay, int totalComments,
+      List<Entity> commentHistoryList) {
+    List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
+    // Calculate the index of starting and ending comments.
+    int startCommentIndex = (this.currentPageId - 1) * maxCommentsToDisplay;
+    int endCommentIndex = Math.min(this.currentPageId * maxCommentsToDisplay, totalComments);
+
+    for (int commentIndex = startCommentIndex; commentIndex < endCommentIndex; commentIndex++) {
+      // Convert comment Datastore Entity object into UserComment objects.
+      Entity commentEntity = commentHistoryList.get(commentIndex);
+      String message = (String) commentEntity.getProperty("message");
+      String name = (String) commentEntity.getProperty("name");
+      String email = (String) commentEntity.getProperty("email");
+      String petPreference = (String) commentEntity.getProperty("petPreference");
+
+      UserComment commentItem = new UserComment(message, name, email, petPreference);
+      comments.add(commentItem);
+    }
+    return comments;
   }
 
   @Override
@@ -247,7 +261,7 @@ public class DataServlet extends HttpServlet {
     private InvalidInputFlags invalidInputFlags;
 
     CommentDataPackage(List<UserComment> inputComments, int inputTotalComments,
-                              int inputTotalPages, int inputCurrentPageId) {
+        int inputTotalPages, int inputCurrentPageId) {
       this.comments = inputComments;
       this.totalComments = inputTotalComments;
       this.defaultMaxComments = DataServlet.DEFAULT_MAX_COMMENTS;
@@ -289,7 +303,7 @@ class UserComment {
   private String petPreference;
 
   public UserComment(String inputMessage, String inputName, String inputEmail,
-                     String inputPetPreference) {
+      String inputPetPreference) {
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
