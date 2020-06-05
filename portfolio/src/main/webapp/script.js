@@ -15,10 +15,13 @@
 // use modern JavaScript (ES5)
 "use strict"
 
+let greetingIndex = 0;
+let enableCommentHistorySection = true;
+let commentHistorySectionHTMLBackup = '';
+
 /**
  * Adds a cyclic greeting to the page.
  */
-let greetingIndex = 0;
 function addCyclicGreeting() {
   const greetings =
       ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!',
@@ -35,13 +38,44 @@ function addCyclicGreeting() {
 }
 
 /**
+ * Turns on (off) the comment history section if the current setting is
+ * off (on), and reload the comments (either removing or restoring the
+ * comments).
+ */
+async function turnOnOffCommentHistorySection() {
+  enableCommentHistorySection = !enableCommentHistorySection;
+  addComments(1);
+}
+
+/**
  * Fetches and adds a history of comments, and the theoretical maximum and
  * default number of comments, the total number of pages, and the current
  * page ID, to the page.
+ * Backup and restore comment history as necessary according to the disabling
+ * and enabling of the comment history section.
  * Show a warning if the user input value of the number of comments to display
  * or page ID is invalid, or if the latest user input may be a XSS attack.
  */
 async function addComments(pageId) {
+  const commentHistorySection = document
+      .getElementById('comment-history-section');
+  // If the comment history section was disabled just now, backup the current
+  // content and remove that content from the page.
+  if (!enableCommentHistorySection) {
+    if (!commentHistorySectionHTMLBackup) {
+      commentHistorySectionHTMLBackup = commentHistorySection.innerHTML;
+      commentHistorySection.innerHTML = '';
+    }
+    return;
+  }
+  // If the comment history section was enabled just now, restore the content
+  // from backup and clear the backup content.
+  if (commentHistorySectionHTMLBackup) { // enableCommentHistorySection is true
+    commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
+    commentHistorySectionHTMLBackup = '';
+    return;
+  }
+
   // Obtain user input of maximum number of comments to display.
   const maxCommentsToDisplay = document
       .getElementById('max-comments-to-display').value;
@@ -90,7 +124,12 @@ async function addComments(pageId) {
   document.getElementById('current-page-id').innerText = currentPageId;
 
   // Show the total number of pages.
-  document.getElementById('total-pages').innerText = totalPages;
+  const totalPagesText = document.getElementById('total-pages');
+  if (totalPages != 0) {
+    totalPagesText.innerText = totalPages;
+  } else {
+    totalPagesText.innerText = 'empty comment history';
+  }
 
   // If the user input value of the number of comments to display or page ID
   // is invalid, or if the latest user form submission is potentially dangerous,

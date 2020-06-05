@@ -86,10 +86,24 @@ nav,
   padding: 30px;
 }
 
+/* Dropdown box for pet preference */
+#user-pet-preference {
+  font-size: 20px;
+  font-weight: bold;
+  height: 25px;
+  width: 80px;
+}
+
 /* Warning */
 .input-warning {
   color: red;
   font-size: 25px;
+}
+
+/* Checkbox for disabling the comment history section */
+#disable-comment-history {
+  height: 20px;
+  width: 20px;
 }
 
 /* Specific headlines */
