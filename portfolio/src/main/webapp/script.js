@@ -66,6 +66,7 @@ async function addComments(pageId) {
     const commentItem = document.createElement('li');
     commentItem.innerText = commentFormatted;
     commentHistoryHTML.appendChild(commentItem);
+    commentHistoryHTML.appendChild(document.createElement('br'));
   }
 
   // Set the theoretical maximum and default for the number of comments to display in the
@@ -97,7 +98,9 @@ async function addComments(pageId) {
  * Helper function to construct a formatted String of a comment.
  */
 function helperFormatComment(commentJson) {
-  return `"${commentJson.message}" -- ${commentJson.name} @ ${commentJson.email}`;
+  return `${commentJson.name} (${commentJson.email}):\n` +
+         `--> says "${commentJson.message}"\n` +
+         `--> loves ${commentJson.petPreference}!\n`;
 }
 
 /**

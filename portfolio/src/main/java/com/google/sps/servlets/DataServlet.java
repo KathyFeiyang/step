@@ -97,7 +97,7 @@ public class DataServlet extends HttpServlet {
     } catch (NumberFormatException e) {
       maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
       // Upon initialization, the field is empty; this special case doesn't indicate erroneous user input.
-      if (!maxCommentsToDisplayStr.equals("")) {
+      if (!maxCommentsToDisplayStr.isEmpty()) {
         invalidMaxComments = true;
       }
     }
@@ -159,8 +159,9 @@ public class DataServlet extends HttpServlet {
         String message = (String) commentEntity.getProperty("message");
         String name = (String) commentEntity.getProperty("name");
         String email = (String) commentEntity.getProperty("email");
+        String petPreference = (String) commentEntity.getProperty("petPreference");
 
-        UserComment commentItem = new UserComment(message, name, email);
+        UserComment commentItem = new UserComment(message, name, email, petPreference);
         comments.add(commentItem);
       }
     }
@@ -189,7 +190,9 @@ public class DataServlet extends HttpServlet {
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
     String email = request.getParameter("message-sender-email");
+    String petPreference = request.getParameter("user-pet-preference");
     // Refrain from adding to the database if the user input is a potentially XSS attack.
+    // Users select petPreference from a set of predefined options, so petPreference is safe.
     if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name)) ||
         !email.equals(Encode.forHtml(email))) {
       isLatestInputDangerous = true;
@@ -199,13 +202,14 @@ public class DataServlet extends HttpServlet {
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new UserComment(message, name, email);
+    comment = new UserComment(message, name, email, petPreference);
 
     // Create corresponding Datastore entity.
     Entity commentEntity = new Entity("UserComment");
     commentEntity.setProperty("message", comment.getMessage());
     commentEntity.setProperty("name", comment.getName());
     commentEntity.setProperty("email", comment.getEmail());
+    commentEntity.setProperty("petPreference", comment.getPetPreference());
     commentEntity.setProperty("timestamp", timestamp);
 
     // Store user comment entity into database.
@@ -246,11 +250,14 @@ class UserComment {
   private String message;
   private String name;
   private String email;
+  private String petPreference;
 
-  public UserComment(String inputMessage, String inputName, String inputEmail) {
+  public UserComment(String inputMessage, String inputName, String inputEmail,
+                     String inputPetPreference) {
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
+    this.petPreference = inputPetPreference;
   }
 
   public String getMessage() {
@@ -265,9 +272,13 @@ class UserComment {
     return this.email;
   }
 
+  public String getPetPreference() {
+    return this.petPreference;
+  }
+
   @Override
   public String toString() {
-    return String.format("UserComment:\nMessage=%s\nName=%s\nEmail=%s\n",
-                         this.message, this.name, this.email);
+    return String.format("UserComment:\nMessage=%s\nName=%s\nEmail=%s\n[Loves %s!]\n",
+                         this.message, this.name, this.email, this.petPreference);
   }
 }
