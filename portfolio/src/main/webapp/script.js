@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+//Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,17 @@
 // use modern JavaScript (ES5)
 "use strict"
 
+let greetingIndex = 0;
+let enableCommentHistorySection = true;
+let commentHistorySectionHTMLBackup = '';
+
 /**
  * Adds a cyclic greeting to the page.
  */
-let greetingIndex = 0;
 function addCyclicGreeting() {
   const greetings =
-      ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!', 'Hallo Welt!'];
+      ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!',
+       'Hallo Welt!'];
 
   // Pick the next greeting in a cycle.
   const greeting = greetings[greetingIndex];
@@ -34,20 +38,61 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a history of comments, and the theoretical maximum and default
- * number of comments, to the page.
+ * Toggle the comment history section and either removing or restoring the
+ * comments.
  */
-async function addComments() {
+async function toggleCommentHistorySection() {
+  enableCommentHistorySection = !enableCommentHistorySection;
+  addComments(1);
+}
+
+/**
+ * Fetches and adds a history of comments, and the theoretical maximum and
+ * default number of comments, the total number of pages, and the current
+ * page ID, to the page.
+ * Backup and restore comment history as necessary according to the disabling
+ * and enabling of the comment history section.
+ * Show a warning if the user input value of the number of comments to display
+ * or page ID is invalid, or if the latest user input may be a XSS attack.
+ */
+async function addComments(pageId) {
+  const commentHistorySection = document
+      .getElementById('comment-history-section');
+  // If the comment history section was disabled just now, backup the current
+  // content and remove that content from the page.
+  if (!enableCommentHistorySection) {
+    if (!commentHistorySectionHTMLBackup) {
+      commentHistorySectionHTMLBackup = commentHistorySection.innerHTML;
+      commentHistorySection.innerHTML = '';
+    }
+    return;
+  }
+  // If the comment history section was enabled just now, restore the content
+  // from backup and clear the backup content.
+  if (commentHistorySectionHTMLBackup) { // enableCommentHistorySection is true
+    commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
+    commentHistorySectionHTMLBackup = '';
+    return;
+  }
+
   // Obtain user input of maximum number of comments to display.
-  const maxCommentsToDisplay = document.getElementById('maxCommentsToDisplay').value;
+  const maxCommentsToDisplay = document
+      .getElementById('max-comments-to-display').value;
 
   // Fetch the comment history, in the specified length, and other metadata,
   // as JSON from the Java servlet.
-  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}`);
+  const response = await fetch(`/data?` +
+      `maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
   const commentDataJson = await response.json();
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
+  const totalPages = commentDataJson.totalPages;
+  const currentPageId = commentDataJson.currentPageId;
+  const invalidInputFlags = commentDataJson.invalidInputFlags;
+  const invalidMaxComments = invalidInputFlags.invalidMaxComments;
+  const invalidPageId = invalidInputFlags.invalidPageId;
+  const isLatestInputDangerous = invalidInputFlags.isLatestInputDangerous;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -58,27 +103,81 @@ async function addComments() {
     const commentItem = document.createElement('li');
     commentItem.innerText = commentFormatted;
     commentHistoryHTML.appendChild(commentItem);
+    commentHistoryHTML.appendChild(document.createElement('br'));
   }
 
-  // Set the theoretical maximum and default number of comments for the input field.
-  const maxCommentsToDisplayInputField = document.getElementById("maxCommentsToDisplay");
-  maxCommentsToDisplayInputField.setAttribute("max", totalComments);
-  maxCommentsToDisplayInputField.setAttribute("value", defaultMaxComments);
+  // Set the theoretical maximum and default for the number of comments to
+  // display in the input field for number of comments per page.
+  const maxCommentsToDisplayInputField = document
+      .getElementById('max-comments-to-display');
+  maxCommentsToDisplayInputField.setAttribute('max', totalComments);
+  maxCommentsToDisplayInputField.setAttribute('value', defaultMaxComments);
+
+  // Set the theoretical maximum and current page ID in the page ID input
+  // field.
+  const goToPageIdInputField = document.getElementById('go-to-page-id');
+  goToPageIdInputField.setAttribute('max', totalPages);
+  goToPageIdInputField.setAttribute('value', currentPageId);
+
+  // Show the ID of the currently displayed page.
+  document.getElementById('current-page-id').innerText = currentPageId;
+
+  // Show the total number of pages.
+  const totalPagesText = document.getElementById('total-pages');
+  if (totalPages != 0) {
+    totalPagesText.innerText = totalPages;
+  } else {
+    totalPagesText.innerText = 'empty comment history';
+  }
+
+  // If the user input value of the number of comments to display or page ID
+  // is invalid, or if the latest user form submission is potentially dangerous,
+  // show a text warning.
+  helperAddInvalidInputWarning('invalid-max-comments', invalidMaxComments,
+                               'Invalid input: expected to be positive.\n' +
+                               'Now displaying a default maximum of' +
+                               ` ${defaultMaxComments} comments.\n`);
+  helperAddInvalidInputWarning('invalid-page-id', invalidPageId,
+                               `Invalid input: expected to be in range` +
+                               ` [1, ${totalPages}].\n`);
+  helperAddInvalidInputWarning('is-latest-input-dangerous',
+                               isLatestInputDangerous,
+                               'Your submission was considered to be a' + 
+                               ' potential XSS attack.\n' +
+                               'It would not be stored. Please try again.' +
+                               ' Thank you!');
 }
 
 /**
  * Helper function to construct a formatted String of a comment.
  */
 function helperFormatComment(commentJson) {
-  return `"${commentJson.message}" -- ${commentJson.name} @ ${commentJson.email}`;
+  return `${commentJson.name} (${commentJson.email}):\n` +
+         `--> says "${commentJson.message}"\n` +
+         `--> loves ${commentJson.petPreference}!\n`;
+}
+
+/**
+ * Add warning regarding input value range to page, if necessary.
+ */
+function helperAddInvalidInputWarning(elementId, shouldAddWarning,
+    warningContent) {
+  const warning = document.getElementById(elementId);
+  if (shouldAddWarning) {
+    warning.innerText = warningContent;
+  } else {
+    warning.innerText = '';
+  }
 }
 
 /**
  * Deletes the complete comment history stored in the backend database.
  */
 async function deleteCommentHistory() {
-  // Make final confirmation with user about whether to delete the comment history.
-  const confirmed = window.confirm('Please click on "OK" to delete the comment history;' +
+  // Make final confirmation with user about whether to delete the comment
+  // history.
+  const confirmed = window.confirm('Please click on "OK" to delete the' +
+                                   ' comment history;' +
                                    ' otherwise please click on "Cancel".\n');
   if (!confirmed) {
     return;
@@ -89,7 +188,7 @@ async function deleteCommentHistory() {
   await fetch(POSTRequest);
 
   // Fetch the now-empty comment history from the server.
-  addComments();
+  addComments(1);
 }
 
 /**
@@ -143,8 +242,8 @@ function executeConsoleCode() {
 }
 
 /**
- * Searches for and displays top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
- * without reloading the page.
+ * Searches for and displays top 3, clickable Wikipedia results, matching
+ * phrases and corresponding URLs, without reloading the page.
  */
 function searchWikipedia() {
   helperSearchWikipedia()
@@ -152,7 +251,8 @@ function searchWikipedia() {
       const wikipediaContainer = document.getElementById('wikipedia-container');
       wikipediaContainer.innerText = 'Top 3 Search Results:\n';
 
-      // Display Wikipedia search phrase matches and corresponding URLs on the page.
+      // Display Wikipedia search phrase matches and corresponding URLs on the
+      // page.
       for (let i = 0; i < wikipediaJson[1].length; i++) {
         const searchResult = document.createElement('a');
         const resultText = document.createTextNode(wikipediaJson[1][i]);
@@ -172,7 +272,8 @@ function searchWikipedia() {
 async function helperSearchWikipedia() {
   // Obtain user input of search keyword.
   const searchKeyword = document.getElementById('search-keyword').value;
-  const wikipediaURL = `https://en.wikipedia.org/w/api.php?action=opensearch&limit=3&format=json` +
+  const wikipediaURL = 'https://en.wikipedia.org/w/api.php?' +
+                       'action=opensearch&limit=3&format=json' +
                        `&origin=*&search=${searchKeyword}`;
 
   // Fetch HTTP response for search result.
