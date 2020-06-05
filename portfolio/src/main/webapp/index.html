@@ -115,7 +115,7 @@
         <br>
         <input class="button" type="submit" value="Submit">
       </form>
-      <div id="is-latest-input-dangerous"></div>
+      <div class="input-warning" id="is-latest-input-dangerous"></div>
       <p><b>Comment History</b></p>
       <ul id="comment-container"></ul>
       <div id="pagination">
@@ -123,8 +123,9 @@
                                              comment history:</label>
         <input type="number" id="max-comments-to-display" name="max-comments-to-display" 
                onchange="addComments(1)" min="0" max="" value="">
-        <div id="invalid-max-comments"></div>
-        <p>Currently on page <b id="current-page-id"></b>. (The latest comments are displayed on top.)</p>
+        <div class="input-warning" id="invalid-max-comments"></div>
+        <p>Currently on page <b id="current-page-id"></b> of <b id="total-pages"></b>.
+          (The latest comments are displayed on top.)</p>
         <button id="first" onclick="addComments(this.id)">&lt;&lt;</button>
         <button id="prev" onclick="addComments(this.id)">&lt;</button>
         <button id="next" onclick="addComments(this.id)">&gt;</button>
@@ -132,7 +133,7 @@
         <label for="go-to-page-id">Go to page </label>
         <input type="number" id="go-to-page-id" name="go-to-page-id" onchange="addComments(this.value)"
                min="1" max="" value="">
-        <div id="invalid-page-id"></div>
+        <div class="input-warning" id="invalid-page-id"></div>
         <br><br>
       </div>
       <button onclick="deleteCommentHistory()">Delete comment history</button>

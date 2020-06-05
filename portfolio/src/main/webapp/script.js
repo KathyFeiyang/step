@@ -89,11 +89,16 @@ async function addComments(pageId) {
   // Show the ID of the currently displayed page.
   document.getElementById('current-page-id').innerText = currentPageId;
 
+  // Show the total number of pages.
+  document.getElementById('total-pages').innerText = totalPages;
+
   // If the user input value of the number of comments to display or page ID
   // is invalid, or if the latest user form submission is potentially dangerous,
   // show a text warning.
   helperAddInvalidInputWarning('invalid-max-comments', invalidMaxComments,
-                               'Invalid input: expected to be positive.\n');
+                               'Invalid input: expected to be positive.\n' +
+                               'Now displaying a default maximum of' +
+                               ` ${defaultMaxComments} comments.\n`);
   helperAddInvalidInputWarning('invalid-page-id', invalidPageId,
                                `Invalid input: expected to be in range` +
                                ` [1, ${totalPages}].\n`);

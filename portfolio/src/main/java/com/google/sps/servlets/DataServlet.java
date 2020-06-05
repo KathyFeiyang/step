@@ -87,64 +87,12 @@ public class DataServlet extends HttpServlet {
     // Obtain the maximum number of comments to display. If the number is invalid, take the default
     // value.
     String maxCommentsToDisplayStr = request.getParameter("maxCommentsToDisplay");
-    int maxCommentsToDisplay;
-    try {
-      maxCommentsToDisplay = Integer.parseInt(maxCommentsToDisplayStr);
-      if (maxCommentsToDisplay < 0) {
-        maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
-        this.invalidInputFlags.setInvalidMaxComments();
-      }
-    } catch (NumberFormatException e) {
-      maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
-      // Upon initialization, the field is empty; this special case doesn't indicate erroneous user
-      // input.
-      if (!maxCommentsToDisplayStr.isEmpty()) {
-        this.invalidInputFlags.setInvalidMaxComments();
-      }
-    }
+    int maxCommentsToDisplay = this.computeMaxCommentsToDisplay(maxCommentsToDisplayStr);
 
     // Obtain the page ID of comment history to display.
-    String pageIdParam = request.getParameter("pageId");
+    String pageIdStr = request.getParameter("pageId");
     int totalPages = (int) Math.ceil(((double) totalComments) / maxCommentsToDisplay);
-    try {
-      currentPageId = Integer.parseInt(pageIdParam);
-      // If the numeric input of page ID is invalid, set to 1.
-      if (currentPageId < 1) {
-        currentPageId = 1;
-        this.invalidInputFlags.setInvalidPageId();
-      } else if (currentPageId > totalPages) {
-        // If there are no comments, set the page ID to 1.
-        if (totalPages == 0) {
-          currentPageId = 1;
-        } else {
-          currentPageId = totalPages;
-          this.invalidInputFlags.setInvalidPageId();
-        }
-      }
-    } catch (NumberFormatException e) {
-      switch (pageIdParam) {
-        case "first":
-          currentPageId = 1;
-          break;
-        case "last":
-          currentPageId = Math.max(totalPages, 1);
-          break;
-        case "prev":
-          currentPageId = Math.max(1, currentPageId - 1);
-          break;
-        case "next":
-          currentPageId = Math.min(Math.max(totalPages, 1), currentPageId + 1);
-          break;
-        default:
-          this.invalidInputFlags.setInvalidPageId();
-      }
-    }
-    // In the special case where the number of comments to display is 0, page navigation
-    // remains on the first page.
-    if (maxCommentsToDisplay == 0) {
-      totalPages = 1;
-      currentPageId = 1;
-    }
+    this.computeAndSetCurrentPageId(pageIdStr, totalPages);
 
     // Convert comment Datastore entity into UserComment objects.
     List<UserComment> comments = new ArrayList<>(maxCommentsToDisplay);
@@ -171,8 +119,8 @@ public class DataServlet extends HttpServlet {
     // comments, the total number of pages, the current page ID, and whether the latest user
     // input was dangerous and rejected, whether the user input values of number of comments to 
     // display & page ID are invalid, to JSON format.
-    CommentDataPackage commentData = new CommentDataPackage(comments, totalComments,
-                                                            totalPages, currentPageId);
+    CommentDataPackage commentData;
+    commentData = new CommentDataPackage(comments, totalComments, totalPages, currentPageId);
     Gson gson = new Gson();
     String commentDataJson = gson.toJson(commentData);
     this.invalidInputFlags.resetInvalidInputFlags();
@@ -180,6 +128,78 @@ public class DataServlet extends HttpServlet {
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");
     response.getWriter().println(commentDataJson);
+  }
+
+  /**
+  * Computes the maximum number of comments to display considering the possible range. Set the
+  * invalid input flag if the original user input is invalid.
+  *
+  * @param maxCommentsToDisplayStr raw user input of the maximum number of comments to display
+  * @return parsed and safe maximum comments to display
+  */
+  private int computeMaxCommentsToDisplay(String maxCommentsToDisplayStr) {
+    int maxCommentsToDisplay;
+    try {
+      maxCommentsToDisplay = Integer.parseInt(maxCommentsToDisplayStr);
+      if (maxCommentsToDisplay < 1) {
+        maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
+        this.invalidInputFlags.setInvalidMaxComments();
+      }
+    } catch (NumberFormatException e) {
+      maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
+      // Upon initialization, the field is empty; this special case doesn't indicate erroneous user
+      // input.
+      if (!maxCommentsToDisplayStr.isEmpty()) {
+        this.invalidInputFlags.setInvalidMaxComments();
+      }
+    }
+    return maxCommentsToDisplay;
+  }
+
+  /**
+  * Computes and sets the current page ID considering the possible range. Set the invalid input
+  * flag if the original user input is invalid.
+  *
+  * @param pageIdStr raw user input of the page ID
+  * @param totalPages total number of pages in the database, given the number of comments per page
+  */
+  private void computeAndSetCurrentPageId(String pageIdStr, int totalPages) {
+    try {
+      currentPageId = Integer.parseInt(pageIdStr);
+      // If the numeric input of page ID is in an invalid range, set the page ID to the closest
+      // valid value, and set the invalid input flag.
+      if (currentPageId < 1) {
+        currentPageId = 1;
+        this.invalidInputFlags.setInvalidPageId();
+      } else if (currentPageId > totalPages) {
+        if (totalPages != 0) {
+          currentPageId = totalPages;
+          this.invalidInputFlags.setInvalidPageId();
+        } else {
+          // If there are no comments in the database, set the page ID to 1.
+          currentPageId = 1;
+        }
+      }
+    } catch (NumberFormatException e) {
+      switch (pageIdStr) {
+        case "first":
+          currentPageId = 1;
+          break;
+        case "last":
+          // check and handle the special case of zero pages.
+          currentPageId = Math.max(totalPages, 1);
+          break;
+        case "prev":
+          currentPageId = Math.max(1, currentPageId - 1);
+          break;
+        case "next":
+          // check and handle the special case of zero pages.
+          currentPageId = Math.min(Math.max(totalPages, 1), currentPageId + 1);
+          break;
+        default:
+          this.invalidInputFlags.setInvalidPageId();
+      }
+    }
   }
 
   @Override

@@ -87,9 +87,7 @@ nav,
 }
 
 /* Warning */
-#invalid-max-comments,
-#invalid-page-id,
-#is-latest-input-dangerous {
+.input-warning {
   color: red;
   font-size: 25px;
 }
