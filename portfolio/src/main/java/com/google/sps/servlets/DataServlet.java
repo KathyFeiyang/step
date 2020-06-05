@@ -72,33 +72,34 @@ public class DataServlet extends HttpServlet {
   private UserComment comment;
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private int currentPageId = 1;
-  private boolean invalidMaxComments = false;
-  private boolean invalidPageId = false;
-  private boolean isLatestInputDangerous = false;
+  private InvalidInputFlags invalidInputFlags = new InvalidInputFlags();
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
     // Query comment history from Datastore.
-    Query commentHistoryQuery = new Query("UserComment").addSort("timestamp", SortDirection.DESCENDING);
+    Query commentHistoryQuery = new Query("UserComment").addSort("timestamp",
+                                                                 SortDirection.DESCENDING);
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     PreparedQuery commentHistory = datastore.prepare(commentHistoryQuery);
     List<Entity> commentHistoryList = commentHistory.asList(FetchOptions.Builder.withDefaults());
     int totalComments = commentHistoryList.size();
 
-    // Obtain the maximum number of comments to display. If the number is invalid, take the default value.
+    // Obtain the maximum number of comments to display. If the number is invalid, take the default
+    // value.
     String maxCommentsToDisplayStr = request.getParameter("maxCommentsToDisplay");
     int maxCommentsToDisplay;
     try {
       maxCommentsToDisplay = Integer.parseInt(maxCommentsToDisplayStr);
       if (maxCommentsToDisplay < 0) {
         maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
-        invalidMaxComments = true;
+        this.invalidInputFlags.setInvalidMaxComments();
       }
     } catch (NumberFormatException e) {
       maxCommentsToDisplay = DEFAULT_MAX_COMMENTS;
-      // Upon initialization, the field is empty; this special case doesn't indicate erroneous user input.
+      // Upon initialization, the field is empty; this special case doesn't indicate erroneous user
+      // input.
       if (!maxCommentsToDisplayStr.isEmpty()) {
-        invalidMaxComments = true;
+        this.invalidInputFlags.setInvalidMaxComments();
       }
     }
 
@@ -110,14 +111,14 @@ public class DataServlet extends HttpServlet {
       // If the numeric input of page ID is invalid, set to 1.
       if (currentPageId < 1) {
         currentPageId = 1;
-        invalidPageId = true;
+        this.invalidInputFlags.setInvalidPageId();
       } else if (currentPageId > totalPages) {
         // If there are no comments, set the page ID to 1.
         if (totalPages == 0) {
           currentPageId = 1;
         } else {
           currentPageId = totalPages;
-          invalidPageId = true;
+          this.invalidInputFlags.setInvalidPageId();
         }
       }
     } catch (NumberFormatException e) {
@@ -135,7 +136,7 @@ public class DataServlet extends HttpServlet {
           currentPageId = Math.min(Math.max(totalPages, 1), currentPageId + 1);
           break;
         default:
-          invalidPageId = true;
+          this.invalidInputFlags.setInvalidPageId();
       }
     }
     // In the special case where the number of comments to display is 0, page navigation
@@ -170,14 +171,11 @@ public class DataServlet extends HttpServlet {
     // comments, the total number of pages, the current page ID, and whether the latest user
     // input was dangerous and rejected, whether the user input values of number of comments to 
     // display & page ID are invalid, to JSON format.
-    commentDataPackage commentData = new commentDataPackage(comments, totalComments, DEFAULT_MAX_COMMENTS,
-                                                            totalPages, currentPageId, invalidMaxComments,
-                                                            invalidPageId, isLatestInputDangerous);
-    invalidMaxComments = false;
-    invalidPageId = false;
-    isLatestInputDangerous = false;
+    CommentDataPackage commentData = new CommentDataPackage(comments, totalComments,
+                                                            totalPages, currentPageId);
     Gson gson = new Gson();
     String commentDataJson = gson.toJson(commentData);
+    this.invalidInputFlags.resetInvalidInputFlags();
 
     // Send the resultant JSON as the sevlet response.
     response.setContentType("application/json;");
@@ -195,7 +193,7 @@ public class DataServlet extends HttpServlet {
     // Users select petPreference from a set of predefined options, so petPreference is safe.
     if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name)) ||
         !email.equals(Encode.forHtml(email))) {
-      isLatestInputDangerous = true;
+      this.invalidInputFlags.setIsLatestInputDangerous();
       response.sendRedirect("/index.html#contact_me");
       return;
     }
@@ -220,28 +218,46 @@ public class DataServlet extends HttpServlet {
     response.sendRedirect("/index.html#contact_me");
   }
 
-  class commentDataPackage {
+  private class CommentDataPackage {
     private List<UserComment> comments;
     private int totalComments;
     private int defaultMaxComments;
     private int totalPages;
     private int currentPageId;
-    private boolean invalidMaxComments;
-    private boolean invalidPageId;
-    private boolean isLatestInputDangerous;
+    private InvalidInputFlags invalidInputFlags;
 
-    public commentDataPackage(List<UserComment> inputComments, int inputTotalComments,
-                              int inputDefaultMaxComments, int inputTotalPages,
-                              int inputCurrentPageId, boolean inputInvalidMaxComments,
-                              boolean inputInvalidPageId, boolean inputIsLatestInputDangerous) {
+    CommentDataPackage(List<UserComment> inputComments, int inputTotalComments,
+                              int inputTotalPages, int inputCurrentPageId) {
       this.comments = inputComments;
       this.totalComments = inputTotalComments;
-      this.defaultMaxComments = inputDefaultMaxComments;
+      this.defaultMaxComments = DataServlet.DEFAULT_MAX_COMMENTS;
       this.totalPages = inputTotalPages;
       this.currentPageId = inputCurrentPageId;
-      this.invalidMaxComments = inputInvalidMaxComments;
-      this.invalidPageId = inputInvalidPageId;
-      this.isLatestInputDangerous = inputIsLatestInputDangerous;
+      this.invalidInputFlags = DataServlet.this.invalidInputFlags;
+    }
+  }
+
+  private class InvalidInputFlags {
+    private boolean invalidMaxComments = false;
+    private boolean invalidPageId = false;
+    private boolean isLatestInputDangerous = false;
+
+    void setInvalidMaxComments() {
+      this.invalidMaxComments = true;
+    }
+
+    void setInvalidPageId() {
+      this.invalidPageId = true;
+    }
+
+    void setIsLatestInputDangerous() {
+      this.isLatestInputDangerous = true;
+    }
+
+    void resetInvalidInputFlags() {
+      this.invalidMaxComments = false;
+      this.invalidPageId = false;
+      this.isLatestInputDangerous = false;
     }
   }
 }

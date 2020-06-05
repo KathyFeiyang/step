@@ -21,7 +21,8 @@
 let greetingIndex = 0;
 function addCyclicGreeting() {
   const greetings =
-      ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!', 'Hallo Welt!'];
+      ['Hello world!', '¡Hola Mundo!', '你好，世界！', 'Bonjour le monde!',
+       'Hallo Welt!'];
 
   // Pick the next greeting in a cycle.
   const greeting = greetings[greetingIndex];
@@ -34,28 +35,31 @@ function addCyclicGreeting() {
 }
 
 /**
- * Fetches and adds a history of comments, and the theoretical maximum and default
- * number of comments, the total number of pages, and the current page ID, to the page.
- * Show a warning if the user input value of the number of comments to display or
- * page ID is invalid, or if the latest user input may be a XSS attack.
+ * Fetches and adds a history of comments, and the theoretical maximum and
+ * default number of comments, the total number of pages, and the current
+ * page ID, to the page.
+ * Show a warning if the user input value of the number of comments to display
+ * or page ID is invalid, or if the latest user input may be a XSS attack.
  */
 async function addComments(pageId) {
   // Obtain user input of maximum number of comments to display.
-  const maxCommentsToDisplay = document.getElementById('max-comments-to-display').value;
+  const maxCommentsToDisplay = document
+      .getElementById('max-comments-to-display').value;
 
   // Fetch the comment history, in the specified length, and other metadata,
   // as JSON from the Java servlet.
-  const response = await fetch(`/data?maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
+  const response = await fetch(`/data?` +
+      `maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
   const commentDataJson = await response.json();
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
-  const invalidMaxComments = commentDataJson.invalidMaxComments;
   const totalPages = commentDataJson.totalPages;
   const currentPageId = commentDataJson.currentPageId;
-  const invalidPageId = commentDataJson.invalidPageId;
-  const isLatestInputDangerous = commentDataJson.isLatestInputDangerous;
-
+  const invalidInputFlags = commentDataJson.invalidInputFlags;
+  const invalidMaxComments = invalidInputFlags.invalidMaxComments;
+  const invalidPageId = invalidInputFlags.invalidPageId;
+  const isLatestInputDangerous = invalidInputFlags.isLatestInputDangerous;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
   // Format each comment as an item in a HTML list structure.
@@ -69,13 +73,15 @@ async function addComments(pageId) {
     commentHistoryHTML.appendChild(document.createElement('br'));
   }
 
-  // Set the theoretical maximum and default for the number of comments to display in the
-  // input field for number of comments per page.
-  const maxCommentsToDisplayInputField = document.getElementById('max-comments-to-display');
+  // Set the theoretical maximum and default for the number of comments to
+  // display in the input field for number of comments per page.
+  const maxCommentsToDisplayInputField = document
+      .getElementById('max-comments-to-display');
   maxCommentsToDisplayInputField.setAttribute('max', totalComments);
   maxCommentsToDisplayInputField.setAttribute('value', defaultMaxComments);
 
-  // Set the theoretical maximum and current page ID in the page ID input field.
+  // Set the theoretical maximum and current page ID in the page ID input
+  // field.
   const goToPageIdInputField = document.getElementById('go-to-page-id');
   goToPageIdInputField.setAttribute('max', totalPages);
   goToPageIdInputField.setAttribute('value', currentPageId);
@@ -83,15 +89,20 @@ async function addComments(pageId) {
   // Show the ID of the currently displayed page.
   document.getElementById('current-page-id').innerText = currentPageId;
 
-  // If the user input value of the number of comments to display or page ID is invalid,
-  // or if the latest user form submission is potentially dangerous, show a text warning.
+  // If the user input value of the number of comments to display or page ID
+  // is invalid, or if the latest user form submission is potentially dangerous,
+  // show a text warning.
   helperAddInvalidInputWarning('invalid-max-comments', invalidMaxComments,
-                               'Invalid input: expected value to be positive.\n');
+                               'Invalid input: expected to be positive.\n');
   helperAddInvalidInputWarning('invalid-page-id', invalidPageId,
-                               `Invalid input: expected value to be in range [1, ${totalPages}].\n`);
-  helperAddInvalidInputWarning('is-latest-input-dangerous', isLatestInputDangerous,
-                               'Your submission was considered to be a potential XSS attack.\n' +
-                               'It would not be stored. Please try again. Thank you!');
+                               `Invalid input: expected to be in range` +
+                               ` [1, ${totalPages}].\n`);
+  helperAddInvalidInputWarning('is-latest-input-dangerous',
+                               isLatestInputDangerous,
+                               'Your submission was considered to be a' + 
+                               ' potential XSS attack.\n' +
+                               'It would not be stored. Please try again.' +
+                               ' Thank you!');
 }
 
 /**
@@ -106,7 +117,8 @@ function helperFormatComment(commentJson) {
 /**
  * Add warning regarding input value range to page, if necessary.
  */
-function helperAddInvalidInputWarning(elementId, shouldAddWarning, warningContent) {
+function helperAddInvalidInputWarning(elementId, shouldAddWarning,
+    warningContent) {
   const warning = document.getElementById(elementId);
   if (shouldAddWarning) {
     warning.innerText = warningContent;
@@ -119,8 +131,10 @@ function helperAddInvalidInputWarning(elementId, shouldAddWarning, warningConten
  * Deletes the complete comment history stored in the backend database.
  */
 async function deleteCommentHistory() {
-  // Make final confirmation with user about whether to delete the comment history.
-  const confirmed = window.confirm('Please click on "OK" to delete the comment history;' +
+  // Make final confirmation with user about whether to delete the comment
+  // history.
+  const confirmed = window.confirm('Please click on "OK" to delete the' +
+                                   ' comment history;' +
                                    ' otherwise please click on "Cancel".\n');
   if (!confirmed) {
     return;
@@ -185,8 +199,8 @@ function executeConsoleCode() {
 }
 
 /**
- * Searches for and displays top 3, clickable Wikipedia results, matching phrases and corresponding URLs,
- * without reloading the page.
+ * Searches for and displays top 3, clickable Wikipedia results, matching
+ * phrases and corresponding URLs, without reloading the page.
  */
 function searchWikipedia() {
   helperSearchWikipedia()
@@ -194,7 +208,8 @@ function searchWikipedia() {
       const wikipediaContainer = document.getElementById('wikipedia-container');
       wikipediaContainer.innerText = 'Top 3 Search Results:\n';
 
-      // Display Wikipedia search phrase matches and corresponding URLs on the page.
+      // Display Wikipedia search phrase matches and corresponding URLs on the
+      // page.
       for (let i = 0; i < wikipediaJson[1].length; i++) {
         const searchResult = document.createElement('a');
         const resultText = document.createTextNode(wikipediaJson[1][i]);
@@ -214,7 +229,8 @@ function searchWikipedia() {
 async function helperSearchWikipedia() {
   // Obtain user input of search keyword.
   const searchKeyword = document.getElementById('search-keyword').value;
-  const wikipediaURL = `https://en.wikipedia.org/w/api.php?action=opensearch&limit=3&format=json` +
+  const wikipediaURL = 'https://en.wikipedia.org/w/api.php?' +
+                       'action=opensearch&limit=3&format=json' +
                        `&origin=*&search=${searchKeyword}`;
 
   // Fetch HTTP response for search result.
