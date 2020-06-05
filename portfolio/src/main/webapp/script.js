@@ -38,11 +38,10 @@ function addCyclicGreeting() {
 }
 
 /**
- * Turns on (off) the comment history section if the current setting is
- * off (on), and reload the comments (either removing or restoring the
- * comments).
+ * Toggle the comment history section and either removing or restoring the
+ * comments.
  */
-async function turnOnOffCommentHistorySection() {
+async function toggleCommentHistorySection() {
   enableCommentHistorySection = !enableCommentHistorySection;
   addComments(1);
 }
