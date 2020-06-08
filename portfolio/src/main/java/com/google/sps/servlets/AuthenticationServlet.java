@@ -90,13 +90,13 @@ public class AuthenticationServlet extends HttpServlet {
   private class AuthenticationInfo {
     private boolean isUserLoggedIn;
     private String authenticationUrl;
-    private String authenticationId;
+    private String userReference;
 
     AuthenticationInfo(boolean inputIsUserLoggedIn, String inputAuthenticationUrl,
-        String inputAuthenticationId) {
+        String inputUserReference) {
       this.isUserLoggedIn = inputIsUserLoggedIn;
       this.authenticationUrl = inputAuthenticationUrl;
-      this.authenticationId = inputAuthenticationId;
+      this.userReference = inputUserReference;
     }
   }
 }

@@ -49,34 +49,25 @@ async function getAuthentication() {
   const authenticationJson = await response.json();
   isUserLoggedIn = authenticationJson.isUserLoggedIn;
   const authenticationUrl = authenticationJson.authenticationUrl;
-  const authenticationId = authenticationJson.authenticationId;
+  const userReference = authenticationJson.userReference;
 
   // Display authentication status and action on the page.
   const authenticationInstructionHTML =
       document.getElementById('authentication-instruction');
   const authenticationUrlHTML = document.getElementById('authentication-url');
-  const authenticationIdHTML = document.getElementById('authentication-id');
+  const userReferenceHTML = document.getElementById('user-reference');
 
   if (isUserLoggedIn) {
     authenticationInstructionHTML.innerText =
         "You can log out by clicking on the link below.";
     authenticationUrlHTML.innerText = "Log out here";
-    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
-    //   authenticationUrlHTML[i].innerText = "Log out here";
-    // }
   } else {
     authenticationInstructionHTML.innerText =
         "Please log in below to submit comments and view the comment history.";
     authenticationUrlHTML.innerText = "Log in here";
-    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
-    //   authenticationUrlHTML[i].innerText = "Log in here";
-    // }
   }
   authenticationUrlHTML.href = authenticationUrl;
-    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
-    //   authenticationUrlHTML[i].href = authenticationUrl;
-    // }
-  authenticationIdHTML.innerText = authenticationId;
+  userReferenceHTML.innerText = userReference;
 }
 
 /**

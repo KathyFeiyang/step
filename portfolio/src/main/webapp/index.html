@@ -100,7 +100,7 @@
       <hr>
       <div>
         <p><b>User Authentication</b></p>
-        <p>Hello <b id="authentication-id"></b>!</p>
+        <p>Hello <b id="user-reference"></b>!</p>
         <div id="authentication-instruction"></div>
         <a id="authentication-url" href=""></a>
         <br><br>
@@ -109,7 +109,7 @@
       <p><b>Comments</b></p>
       <div id="comment-submission-section">
         <p><b>Submit your comments :)</b></p>
-        <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
+        <form id="comment-form" onsubmit="presentPopupCommentReceipt() & getAuthentication()" action="/data" method="POST">
           <label for="message">Enter your message here...<br></label>
           <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
           <label for="message-sender-name">Your name [required]:</label>
