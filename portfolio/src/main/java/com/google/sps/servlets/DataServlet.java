@@ -55,6 +55,8 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.lang.Math;
@@ -76,6 +78,14 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    UserService userService = UserServiceFactory.getUserService();
+
+    // Check if the user is logged-in; if not, the user must first login.
+    if (!userService.isUserLoggedIn()) {
+      response.sendRedirect("/index.html#contact_me");
+      return;
+    }
+
     // Query comment history from Datastore.
     Query commentHistoryQuery = new Query("UserComment").addSort("timestamp",
                                                                  SortDirection.DESCENDING);
@@ -109,7 +119,7 @@ public class DataServlet extends HttpServlet {
     String commentDataJson = gson.toJson(commentData);
     this.invalidInputFlags.resetInvalidInputFlags();
 
-    // Send the resultant JSON as the sevlet response.
+    // Send the resultant JSON as the servlet response.
     response.setContentType("application/json;");
     response.getWriter().println(commentDataJson);
   }
@@ -218,15 +228,22 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    UserService userService = UserServiceFactory.getUserService();
+
+    // Check if the user is logged-in; if not, the user must first login.
+    if (!userService.isUserLoggedIn()) {
+      response.sendRedirect("/index.html#contact_me");
+      return;
+    }
+
     // Obtain user input from submitted form and timestamp.
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
-    String email = request.getParameter("message-sender-email");
+    String email = userService.getCurrentUser().getEmail();
     String petPreference = request.getParameter("user-pet-preference");
     // Refrain from adding to the database if the user input is a potentially XSS attack.
     // Users select petPreference from a set of predefined options, so petPreference is safe.
-    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name)) ||
-        !email.equals(Encode.forHtml(email))) {
+    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name))) {
       this.invalidInputFlags.setIsLatestInputDangerous();
       response.sendRedirect("/index.html#contact_me");
       return;

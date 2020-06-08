@@ -17,7 +17,9 @@
 
 let greetingIndex = 0;
 let enableCommentHistorySection = true;
+let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
+let commentSubmissionSectionHTMLBackup = '';
 
 /**
  * Adds a cyclic greeting to the page.
@@ -38,6 +40,46 @@ function addCyclicGreeting() {
 }
 
 /**
+ * Obtain user authentication status and the corresponding action; add
+ * information to the page.
+ */
+async function getAuthentication() {
+  // Obtain authentication information.
+  const response = await fetch(`/authentication`);
+  const authenticationJson = await response.json();
+  isUserLoggedIn = authenticationJson.isUserLoggedIn;
+  const authenticationUrl = authenticationJson.authenticationUrl;
+  const authenticationId = authenticationJson.authenticationId;
+
+  // Display authentication status and action on the page.
+  const authenticationInstructionHTML =
+      document.getElementById('authentication-instruction');
+  const authenticationUrlHTML = document.getElementById('authentication-url');
+  const authenticationIdHTML = document.getElementById('authentication-id');
+
+  if (isUserLoggedIn) {
+    authenticationInstructionHTML.innerText =
+        "You can log out by clicking on the link below.";
+    authenticationUrlHTML.innerText = "Log out here";
+    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
+    //   authenticationUrlHTML[i].innerText = "Log out here";
+    // }
+  } else {
+    authenticationInstructionHTML.innerText =
+        "Please log in below to submit comments and view the comment history.";
+    authenticationUrlHTML.innerText = "Log in here";
+    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
+    //   authenticationUrlHTML[i].innerText = "Log in here";
+    // }
+  }
+  authenticationUrlHTML.href = authenticationUrl;
+    // for (let i = 0; i < authenticationUrlHTML.length; i++) {
+    //   authenticationUrlHTML[i].href = authenticationUrl;
+    // }
+  authenticationIdHTML.innerText = authenticationId;
+}
+
+/**
  * Toggle the comment history section and either removing or restoring the
  * comments.
  */
@@ -50,26 +92,48 @@ async function toggleCommentHistorySection() {
  * Fetches and adds a history of comments, and the theoretical maximum and
  * default number of comments, the total number of pages, and the current
  * page ID, to the page.
- * Backup and restore comment history as necessary according to the disabling
- * and enabling of the comment history section.
+ * Backup and restore comment submission/history sections as necessary
+ * according to the disabling and enabling of the comment history section,
+ * and whether the user is logged in.
  * Show a warning if the user input value of the number of comments to display
  * or page ID is invalid, or if the latest user input may be a XSS attack.
  */
 async function addComments(pageId) {
+  const commentSubmissionSection = document
+      .getElementById('comment-submission-section');
   const commentHistorySection = document
       .getElementById('comment-history-section');
-  // If the comment history section was disabled just now, backup the current
-  // content and remove that content from the page.
-  if (!enableCommentHistorySection) {
+  await getAuthentication();
+
+  // If the comment history section was disabled just now or if the user is
+  // not logged in, backup the current comment history content and remove
+  // that content from the page. Additionally, if the user is not logged in,
+  // backup and remove the comment submission form.
+  if (!enableCommentHistorySection || !isUserLoggedIn) {
     if (!commentHistorySectionHTMLBackup) {
       commentHistorySectionHTMLBackup = commentHistorySection.innerHTML;
       commentHistorySection.innerHTML = '';
+    }
+    if (!isUserLoggedIn) {
+      if (!commentSubmissionSectionHTMLBackup) {
+        commentSubmissionSectionHTMLBackup = commentSubmissionSection.innerHTML;
+        commentSubmissionSection.innerHTML = '';
+      }
     }
     return;
   }
   // If the comment history section was enabled just now, restore the content
   // from backup and clear the backup content.
-  if (commentHistorySectionHTMLBackup) { // enableCommentHistorySection is true
+  // (isUserLoggedIn is true.)
+  if (commentSubmissionSectionHTMLBackup) {
+    commentSubmissionSection.innerHTML = commentSubmissionSectionHTMLBackup;
+    commentSubmissionSectionHTMLBackup = '';
+  }
+  // If the comment history section was enabled just now, restore the content
+  // from backup and clear the backup content. Since the previous content is
+  // restored, refrain from fetching the comment history.
+  // (enableCommentHistorySection is true; isUserLoggedIn is also true.)
+  if (commentHistorySectionHTMLBackup) {
     commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
     commentHistorySectionHTMLBackup = '';
     return;
@@ -83,6 +147,12 @@ async function addComments(pageId) {
   // as JSON from the Java servlet.
   const response = await fetch(`/data?` +
       `maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
+  // If the response is a redirection, go to the redirected destination URL.
+  // This can happen when the user needs to log in before accessing the comment section.
+  if (response.redirected) {
+    window.location.replace(response.url);
+    return;
+  }
   const commentDataJson = await response.json();
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
@@ -195,17 +265,15 @@ async function deleteCommentHistory() {
  * Presents a receipt for getting a user comment, in a pop-up window.
  */
 function presentPopupCommentReceipt() {
-  // Obtain user input comment content, name and email.
+  // Obtain user input comment content and name.
   const formElements = document.getElementById('comment-form').elements;
   const userComment = formElements[0].value;
   const userName = formElements[1].value;
-  const userEmail = formElements[2].value;
 
   // Construct user comment receipt.
   const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
-                  `We have recorded the following:\n` +
-                  `    *Message: "${userComment}"\n` +
-                  `    *Contact Information: ${userEmail}\n`;
+                  `You entered the following:\n` +
+                  `    *Message: "${userComment}"\n`;
 
   // Present comment receipt in a pop-up window.
   window.alert(receipt);

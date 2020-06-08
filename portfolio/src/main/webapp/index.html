@@ -96,27 +96,37 @@
       <a href="https://www.github.com/KathyFeiyang">
         <img src="/images/GitHub_icon.png" width="50" height="50">
       </a>
-      <p><b>Submit your comments :)</b></p>
-      <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
-        <label for="message">Enter your message here...<br></label>
-        <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
-        <label for="message-sender-name">Your name [required]:</label>
-        <input type="text" id="message-sender-name" name="message-sender-name" required
-               placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
-        <label for="message-sender-email">Your email [required]:</label>
-        <input type="email" id="message-sender-email" name="message-sender-email" required
-               placeholder="example@gmail.com"><br>
-        <label for="user-pet-preference">I love</label>
-        <select name="user-pet-preference" id="user-pet-preference">
-          <option value="cats">cats!</option>
-          <option value="dogs">dogs!</option>
-          <option value="both cats and dogs">both!</option>
-        </select>
-        <br>
-        <input class="button" type="submit" value="Submit">
-      </form>
-      <div class="input-warning" id="is-latest-input-dangerous"></div>
       <br>
+      <hr>
+      <div>
+        <p><b>User Authentication</b></p>
+        <p>Hello <b id="authentication-id"></b>!</p>
+        <div id="authentication-instruction"></div>
+        <a id="authentication-url" href=""></a>
+        <br><br>
+        <hr>
+      </div>
+      <p><b>Comments</b></p>
+      <div id="comment-submission-section">
+        <p><b>Submit your comments :)</b></p>
+        <form id="comment-form" onsubmit="presentPopupCommentReceipt()" action="/data" method="POST">
+          <label for="message">Enter your message here...<br></label>
+          <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
+          <label for="message-sender-name">Your name [required]:</label>
+          <input type="text" id="message-sender-name" name="message-sender-name" required
+                placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
+          <label for="user-pet-preference">I love</label>
+          <select name="user-pet-preference" id="user-pet-preference">
+            <option value="cats">cats!</option>
+            <option value="dogs">dogs!</option>
+            <option value="both cats and dogs">both!</option>
+          </select>
+          <br>
+          <input class="button" type="submit" value="Submit">
+        </form>
+        <div class="input-warning" id="is-latest-input-dangerous"></div>
+        <br>
+      </div>
       <label for="disable-comment-history">Disable comment history: </label>
       <input type="checkbox" id="disable-comment-history" name="disable-comment-history"
              onchange="toggleCommentHistorySection()">
@@ -142,6 +152,8 @@
           <br><br>
         </div>
         <button onclick="deleteCommentHistory()">Delete comment history</button>
+        <br>
+        <hr>
       </div>
     </div>
 
@@ -151,7 +163,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-06-05</time>.</footer>
+    <footer>Last modified on <time>2020-06-08</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>
