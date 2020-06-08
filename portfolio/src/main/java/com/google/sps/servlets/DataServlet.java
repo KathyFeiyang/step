@@ -215,12 +215,13 @@ public class DataServlet extends HttpServlet {
     for (int commentIndex = startCommentIndex; commentIndex < endCommentIndex; commentIndex++) {
       // Convert comment Datastore Entity object into UserComment objects.
       Entity commentEntity = commentHistoryList.get(commentIndex);
+      String userId = (String) commentEntity.getProperty("userId");
       String message = (String) commentEntity.getProperty("message");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
       String petPreference = (String) commentEntity.getProperty("petPreference");
 
-      UserComment commentItem = new UserComment(message, name, email, petPreference);
+      UserComment commentItem = new UserComment(userId, message, name, email, petPreference);
       comments.add(commentItem);
     }
     return comments;
@@ -237,6 +238,7 @@ public class DataServlet extends HttpServlet {
     }
 
     // Obtain user input from submitted form and timestamp.
+    String userId = userService.getCurrentUser().getUserId();
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
     String email = userService.getCurrentUser().getEmail();
@@ -251,10 +253,11 @@ public class DataServlet extends HttpServlet {
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new UserComment(message, name, email, petPreference);
+    comment = new UserComment(userId, message, name, email, petPreference);
 
     // Create corresponding Datastore entity.
     Entity commentEntity = new Entity("UserComment");
+    commentEntity.setProperty("userId", comment.getUserId());
     commentEntity.setProperty("message", comment.getMessage());
     commentEntity.setProperty("name", comment.getName());
     commentEntity.setProperty("email", comment.getEmail());
@@ -314,17 +317,23 @@ public class DataServlet extends HttpServlet {
 }
 
 class UserComment {
+  private String userId;
   private String message;
   private String name;
   private String email;
   private String petPreference;
 
-  public UserComment(String inputMessage, String inputName, String inputEmail,
+  public UserComment(String inputUserId, String inputMessage, String inputName, String inputEmail,
       String inputPetPreference) {
+    this.userId = inputUserId;
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
     this.petPreference = inputPetPreference;
+  }
+
+  public String getUserId() {
+    return this.userId;
   }
 
   public String getMessage() {
@@ -345,7 +354,7 @@ class UserComment {
 
   @Override
   public String toString() {
-    return String.format("UserComment:\nMessage=%s\nName=%s\nEmail=%s\n[Loves %s!]\n",
-                         this.message, this.name, this.email, this.petPreference);
+    return String.format("UserComment:\nMessage=%s\nName=%s (ID=%s)\nEmail=%s\n[Loves %s!]\n",
+                         this.message, this.name, this.userId, this.email, this.petPreference);
   }
 }

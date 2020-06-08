@@ -14,10 +14,18 @@
 
 package com.google.sps.servlets;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.List;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,10 +41,16 @@ public class AuthenticationServlet extends HttpServlet {
 
     UserService userService = UserServiceFactory.getUserService();
     if (userService.isUserLoggedIn()) {
-      String userEmail = userService.getCurrentUser().getEmail();
       String urlToRedirectToAfterUserLogsOut = "/index.html#contact_me";
       String logoutUrl = userService.createLogoutURL(urlToRedirectToAfterUserLogsOut);
-      authenticationInfo = new AuthenticationInfo(true, logoutUrl, userEmail);
+      // Obtain the name to refer to the current user.
+      String userName = this.getUserName(userService.getCurrentUser().getUserId());
+      if (!userName.isEmpty()) {
+        authenticationInfo = new AuthenticationInfo(true, logoutUrl, userName);
+      } else {
+        String userEmail = userService.getCurrentUser().getEmail();
+        authenticationInfo = new AuthenticationInfo(true, logoutUrl, userEmail);
+      }
     } else {
       String urlToRedirectToAfterUserLogsIn = "/index.html#contact_me";
       String loginUrl = userService.createLoginURL(urlToRedirectToAfterUserLogsIn);
@@ -48,6 +62,29 @@ public class AuthenticationServlet extends HttpServlet {
 
     // Send the resultant JSON as the servlet response.
     response.getWriter().println(authenticationInfoJson);
+  }
+
+  /**
+  * Finds the specified name of the user corresponding to the user ID. If the user submitted
+  * multiple comments with different names, take the latest name; if the user has not submitted
+  * a comment, return an empty String.
+  *
+  * @param userId the ID of the user for whom we want to find the name
+  * @return the specified name of the user
+  */
+  private String getUserName(String userId) {
+    DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    // Take the latest name.
+    Query query = new Query("UserComment")
+        .setFilter(new Query.FilterPredicate("userId", Query.FilterOperator.EQUAL, userId))
+        .addSort("timestamp", SortDirection.DESCENDING);
+    PreparedQuery results = datastore.prepare(query);
+    List<Entity> latestCommentEntity = results.asList(FetchOptions.Builder.withLimit(1));
+    // user has not submitted a comment
+    if (latestCommentEntity.size() == 0) {
+      return "";
+    }
+    return (String) latestCommentEntity.get(0).getProperty("name");
   }
 
   private class AuthenticationInfo {
