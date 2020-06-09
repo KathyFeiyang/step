@@ -75,6 +75,7 @@ public class DataServlet extends HttpServlet {
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private int currentPageId = 1;
   private InvalidInputFlags invalidInputFlags = new InvalidInputFlags();
+  private static final String REDIRECT_URL = "/index.html#contact_me";
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -82,7 +83,7 @@ public class DataServlet extends HttpServlet {
 
     // Check if the user is logged-in; if not, the user must first login.
     if (!userService.isUserLoggedIn()) {
-      response.sendRedirect("/index.html#contact_me");
+      response.sendRedirect(REDIRECT_URL);
       return;
     }
 
@@ -233,7 +234,7 @@ public class DataServlet extends HttpServlet {
 
     // Check if the user is logged-in; if not, the user must first login.
     if (!userService.isUserLoggedIn()) {
-      response.sendRedirect("/index.html#contact_me");
+      response.sendRedirect(REDIRECT_URL);
       return;
     }
 
@@ -247,7 +248,7 @@ public class DataServlet extends HttpServlet {
     // Users select petPreference from a set of predefined options, so petPreference is safe.
     if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name))) {
       this.invalidInputFlags.setIsLatestInputDangerous();
-      response.sendRedirect("/index.html#contact_me");
+      response.sendRedirect(REDIRECT_URL);
       return;
     }
     long timestamp = System.currentTimeMillis();
@@ -269,7 +270,7 @@ public class DataServlet extends HttpServlet {
     datastore.put(commentEntity);
 
     // Redirect back to the homepage's "Contact Me" section.
-    response.sendRedirect("/index.html#contact_me");
+    response.sendRedirect(REDIRECT_URL);
   }
 
   private class CommentDataPackage {
