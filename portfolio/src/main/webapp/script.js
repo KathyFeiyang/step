@@ -79,25 +79,25 @@ async function toggleCommentHistorySection() {
 }
 
 /**
- * Comments include (1) comment submission; (2) comment history.
- * * Authenticates the current user.
- * * Fetches and adds a history of comments, and the theoretical maximum and
+ * A high-level function to implement comment-related features:
+ * (Content includes (1) comment submission; (2) comment history)
+ * 
+ * -- Authenticates the current user.
+ * -- Fetches and adds a history of comments, and the theoretical maximum and
  * default number of comments, the total number of pages, and the current
  * page ID, to the page.
- * * Hides/backups and displays/restores comment submission/history sections as
+ * -- Hides/backups and displays/restores comment submission/history sections as
  * necessary according to the disabling and enabling of the comment history
  * section, and whether the user is logged in.
- * * Shows a warning if the user input value of the number of comments to
+ * -- Shows a warning if the user input value of the number of comments to
  * display or page ID is invalid, or if the latest user comment may be a XSS
  * attack.
  */
 async function addComments(pageId) {
   await getAuthentication();
 
-  // Check whether the comment submission and history sections are enabled,
-  // and backup & restore the sections as needed. If the comment history
-  // section's content is fully prepared, we no longer need to fetch from
-  // the backend database.
+  // If the comment history section's content is fully prepared, we no longer
+  // need to fetch from the backend database.
   checkCommentSubmissionSection();
   if (!checkCommentHistorySection()) {
     // Fetch and add comment history.
@@ -106,16 +106,13 @@ async function addComments(pageId) {
 }
 
 /**
- * Checks whether the comment submission section should be enabled, and hides
- * or displays the comment submission section as needed.
+ * Checks whether the comment submission section should be enabled, and only
+ * display the comment submission form if the user is logged in.
  */
 function checkCommentSubmissionSection() {
   const commentSubmissionSection = document
       .getElementById('comment-submission-section');
   let displayStatus;
-
-  // If the user is not logged in, hide the comment submission form. Otherwise
-  // display the form.
   if (!isUserLoggedIn) {
     displayStatus = "none";
   } else {
