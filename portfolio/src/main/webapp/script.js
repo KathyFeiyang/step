@@ -22,8 +22,8 @@ let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
 let map;
 let isMapLibrariesLoaded = false;
-const APIKey = 'AIzaSyCw1OgZ-xfNN2eh5iX-lyGVTiAJPs1gy-k';
 const mapInitialZoom = 10;
+const APIKey = config.APIKey;
 
 /**
  * Adds a cyclic greeting to the page.
