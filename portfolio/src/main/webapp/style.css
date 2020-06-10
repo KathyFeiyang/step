@@ -114,3 +114,7 @@ nav,
   position: sticky;
   top: 170px;
 }
+
+#map {
+  height: 20em;
+}
