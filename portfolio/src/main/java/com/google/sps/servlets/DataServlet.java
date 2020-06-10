@@ -217,12 +217,14 @@ public class DataServlet extends HttpServlet {
       // Convert comment Datastore Entity object into UserComment objects.
       Entity commentEntity = commentHistoryList.get(commentIndex);
       String userId = (String) commentEntity.getProperty("userId");
-      String message = (String) commentEntity.getProperty("message");
+      String placeQueryName = (String) commentEntity.getProperty("placeQueryName");
+      String commentContent = (String) commentEntity.getProperty("commentContent");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
       String petPreference = (String) commentEntity.getProperty("petPreference");
 
-      UserComment commentItem = new UserComment(userId, message, name, email, petPreference);
+      UserComment commentItem = new UserComment(userId, placeQueryName, commentContent, name,
+                                                email, petPreference);
       comments.add(commentItem);
     }
     return comments;
@@ -240,13 +242,15 @@ public class DataServlet extends HttpServlet {
 
     // Obtain user input from submitted form and timestamp.
     String userId = userService.getCurrentUser().getUserId();
-    String message = request.getParameter("message");
-    String name = request.getParameter("message-sender-name");
+    String placeQueryName = request.getParameter("place-query-name");
+    String commentContent = request.getParameter("comment-content");
+    String name = request.getParameter("comment-sender-name");
     String email = userService.getCurrentUser().getEmail();
     String petPreference = request.getParameter("user-pet-preference");
     // Refrain from adding to the database if the user input is a potentially XSS attack.
     // Users select petPreference from a set of predefined options, so petPreference is safe.
-    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name))) {
+    if (!commentContent.equals(Encode.forHtml(commentContent)) ||
+        !name.equals(Encode.forHtml(name))) {
       this.invalidInputFlags.setIsLatestInputDangerous();
       response.sendRedirect(REDIRECT_URL);
       return;
@@ -254,12 +258,13 @@ public class DataServlet extends HttpServlet {
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new UserComment(userId, message, name, email, petPreference);
+    comment = new UserComment(userId, placeQueryName, commentContent, name, email, petPreference);
 
     // Create corresponding Datastore entity.
     Entity commentEntity = new Entity("UserComment");
     commentEntity.setProperty("userId", comment.getUserId());
-    commentEntity.setProperty("message", comment.getMessage());
+    commentEntity.setProperty("placeQueryName", comment.getPlaceQueryName());
+    commentEntity.setProperty("commentContent", comment.getCommentContent());
     commentEntity.setProperty("name", comment.getName());
     commentEntity.setProperty("email", comment.getEmail());
     commentEntity.setProperty("petPreference", comment.getPetPreference());
@@ -319,15 +324,17 @@ public class DataServlet extends HttpServlet {
 
 class UserComment {
   private String userId;
-  private String message;
+  private String placeQueryName;
+  private String commentContent;
   private String name;
   private String email;
   private String petPreference;
 
-  public UserComment(String inputUserId, String inputMessage, String inputName, String inputEmail,
-      String inputPetPreference) {
+  public UserComment(String inputUserId, String inputPlaceQueryName, String inputCommentContent,
+      String inputName, String inputEmail, String inputPetPreference) {
     this.userId = inputUserId;
-    this.message = inputMessage;
+    this.placeQueryName = inputPlaceQueryName;
+    this.commentContent = inputCommentContent;
     this.name = inputName;
     this.email = inputEmail;
     this.petPreference = inputPetPreference;
@@ -337,8 +344,12 @@ class UserComment {
     return this.userId;
   }
 
-  public String getMessage() {
-    return this.message;
+  public String getPlaceQueryName() {
+    return this.placeQueryName;
+  }
+
+  public String getCommentContent() {
+    return this.commentContent;
   }
 
   public String getName() {
@@ -355,7 +366,9 @@ class UserComment {
 
   @Override
   public String toString() {
-    return String.format("UserComment:\nMessage=%s\nName=%s (ID=%s)\nEmail=%s\n[Loves %s!]\n",
-                         this.message, this.name, this.userId, this.email, this.petPreference);
+    return String.format("UserComment:\nPlace Name=%s\nComment=%s\nName=%s (ID=%s)\nEmail=%s\n" +
+                         "[Loves %s!]\n",
+                         this.placeQueryName, this.commentContent, this.name, this.userId,
+                         this.email, this.petPreference);
   }
 }
