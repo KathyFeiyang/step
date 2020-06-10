@@ -71,11 +71,11 @@ import org.owasp.encoder.Encode;
 
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
+  public static final String REDIRECT_URL = "/index.html#contact_me";
   private UserComment comment;
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private int currentPageId = 1;
   private InvalidInputFlags invalidInputFlags = new InvalidInputFlags();
-  private static final String REDIRECT_URL = "/index.html#contact_me";
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {

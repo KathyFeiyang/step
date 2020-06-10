@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 @WebServlet("/delete-data")
 public class DeleteDataServlet extends HttpServlet {
-  private static final String REDIRECT_URL = "/index.html#contact_me";
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -38,7 +37,7 @@ public class DeleteDataServlet extends HttpServlet {
 
     // Check if the user is logged-in; if not, the user must first login.
     if (!userService.isUserLoggedIn()) {
-      response.sendRedirect(REDIRECT_URL);
+      response.sendRedirect(DataServlet.REDIRECT_URL);
       return;
     }
 
@@ -54,6 +53,6 @@ public class DeleteDataServlet extends HttpServlet {
     }
 
     // Redirect back to the homepage's "Contact Me" section.
-    response.sendRedirect(REDIRECT_URL);
+    response.sendRedirect(DataServlet.REDIRECT_URL);
   }
 }
