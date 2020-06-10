@@ -112,13 +112,7 @@ async function addComments(pageId) {
 function checkCommentSubmissionSection() {
   const commentSubmissionSection = document
       .getElementById('comment-submission-section');
-  let displayStatus;
-  if (!isUserLoggedIn) {
-    displayStatus = "none";
-  } else {
-    displayStatus = "initial";
-  }
-  commentSubmissionSection.style.display = displayStatus;
+  commentSubmissionSection.style.display = isUserLoggedIn ? 'initial' : 'none';
 }
 
 /**
