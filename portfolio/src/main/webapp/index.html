@@ -10,7 +10,7 @@
     <title>Kathy's Portfolio</title>
   </head>
 
-  <body onload="addComments(1) & addMap()">
+  <body onload="addComments(1) & addMap() & getBlobstoreUploadUrl()">
     <nav id="nav" role="navigation" aria-label="navigation bar">
       <a href="/gallery.html">Photo Gallery</a>
       <a href="/blogs.html">Blog Posts</a>
@@ -111,7 +111,7 @@
       <div id="comment-submission-section">
         <p><b>Submit your comments about places you visited :)</b></p>
         <form id="comment-form" onsubmit="presentPopupCommentReceipt() & getAuthentication()"
-              action="/data" method="POST">
+              action="/data" method="POST"  enctype="multipart/form-data">
           <label for="place-query-name">Enter the name of the place here...<br></label>
           <input type="text" id="place-query-name" name="place-query-name" required
                  placeholder="A place..."><br>
@@ -127,6 +127,9 @@
             <option value="dogs">dogs!</option>
             <option value="both cats and dogs">both!</option>
           </select>
+          <br>
+          <label for="comment-image">Upload image</label>
+          <input type="file" id="comment-image" name="comment-image">
           <br>
           <input class="button" type="submit" value="Submit">
         </form>

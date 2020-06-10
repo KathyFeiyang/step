@@ -75,6 +75,15 @@ async function getAuthentication() {
 }
 
 /**
+ * Obtains and sets the URL to which comment form images should be submitted.
+ */
+async function getBlobstoreUploadUrl() {
+  const response = await fetch('/blobstore-upload-url');
+  const blobstoreUploadUrl = await response.text();
+  document.getElementById('comment-form').action = blobstoreUploadUrl;
+}
+
+/**
  * Toggle the comment history section and either removing or restoring the
  * comments.
  */
@@ -418,6 +427,7 @@ function helperFormatPlaceInfo(name, comment, formattedAddress, rating,
            `<p><em>${comment.name} (${comment.email})</em>
                comments on "${comment.placeQueryName}":<br>
                --> "${comment.commentContent}"</p>` +
+           `<img src="${comment.imageUrl}">` +
            `<p><b>Address</b> ${formattedAddress}</p>` +
            `<p><b>Rating</b> ${rating}</p>` +
            `<p><b>Currently open?</b> ${isOpenNow}</p>` +
