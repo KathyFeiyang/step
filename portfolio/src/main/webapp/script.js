@@ -49,6 +49,7 @@ async function getAuthentication() {
   isUserLoggedIn = authenticationJson.isUserLoggedIn;
   const authenticationUrl = authenticationJson.authenticationUrl;
   const userReference = authenticationJson.userReference;
+  const userEmail = authenticationJson.userEmail;
 
   // Display authentication status and action on the page.
   const authenticationInstructionHTML =
@@ -57,16 +58,18 @@ async function getAuthentication() {
   const userReferenceHTML = document.getElementById('user-reference');
 
   if (isUserLoggedIn) {
-    authenticationInstructionHTML.innerText =
-        "You can log out by clicking on the link below.";
+    authenticationInstructionHTML.innerHTML =
+        `<p>You are currently logged in as <b>${userEmail}</b>.` +
+        " You can log out by clicking on the link below.</p>";
     authenticationUrlHTML.innerText = "Log out here";
   } else {
     authenticationInstructionHTML.innerText =
-        "Please log in below to submit comments and view the comment history.";
+        "You are not logged in." +
+        " Please log in below to submit comments and view the comment history.";
     authenticationUrlHTML.innerText = "Log in here";
   }
   authenticationUrlHTML.href = authenticationUrl;
-  userReferenceHTML.innerText = userReference;
+  userReferenceHTML.innerText = userReference ? userReference : userEmail;
 }
 
 /**
