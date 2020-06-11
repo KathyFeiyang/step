@@ -16,13 +16,12 @@
 "use strict"
 
 let greetingIndex = 0;
-let comments = [];
 let enableCommentHistorySection = true;
 let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
 let map;
 let isMapLibrariesLoaded = false;
-const mapInitialZoom = 10;
+const mapInitialZoom = 12;
 const APIKey = config.APIKey;
 
 /**
@@ -189,7 +188,7 @@ async function addCommentHistory(pageId) {
     return;
   }
   const commentDataJson = await response.json();
-  comments = commentDataJson.comments;
+  const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
   const totalPages = commentDataJson.totalPages;
@@ -255,7 +254,7 @@ async function addCommentHistory(pageId) {
   // Add comments and detailed information about the referenced places to the
   // map.
   if (isMapLibrariesLoaded) {
-    window.addPlacesToMap();
+    window.addPlacesToMap(comments);
   }
 }
 
@@ -336,7 +335,7 @@ function addMap() {
   mapScript.async = true;
 
   // Attach the callback function to the `window` object
-  window.addPlacesToMap = function() {
+  window.addPlacesToMap = function(comments) {
     isMapLibrariesLoaded = true;
     // Upon invoking the callback function, the Maps and Places libraries
     // are loaded.
@@ -346,6 +345,9 @@ function addMap() {
 
     // Obtain information about the places referenced in the comments, and
     // add that information and the corresponding comments to the map.
+    if (!comments) {
+      return;
+    }
     for (let i = 0; i < comments.length; i++) {
       addPlaceInfo(comments[i]);
     }
@@ -372,8 +374,8 @@ function addPlaceInfo(comment) {
 
       for (let i = 0; i < results.length; i++) {
         let place = results[i];
-        let isOpenNow = 'unknown';
-        let openingHours = ['unknown'];
+        let isOpenNow;
+        let openingHours;
         const placeId = place.place_id;
         const detailsRequest = {
           placeId: placeId,
@@ -381,35 +383,42 @@ function addPlaceInfo(comment) {
           // (utc_offset_minutes is required for opening_hours.isOpen()
           // to work.)
         };
+        // Add a marker at the place's coordinate.
+        const marker =
+            new google.maps.Marker({title: place.name,
+                                    position: place.geometry.location,
+                                    map: map});
+
         // Query for additional information using Place Details.
         service.getDetails(detailsRequest,
             function(detailsResults, detailsStatus) {
+          let formattedPlaceInfo;
           if (detailsStatus === google.maps.places.PlacesServiceStatus.OK) {
-
             // Obtaining operating hours information.
             if (detailsResults.opening_hours) {
               isOpenNow = detailsResults.opening_hours.isOpen();
               openingHours = detailsResults.opening_hours.weekday_text;
             }
-
-            // Add marker at the place's coordinate.
-            const marker =
-                new google.maps.Marker({title: place.name,
-                                        position: place.geometry.location,
-                                        map: map});
-
-            // Add information window about the place.
-            const formattedPlaceInfo =
+            isOpenNow = isOpenNow ? isOpenNow : "Information not found."
+            openingHours = openingHours ? openingHours : ["Information not found."];
+            formattedPlaceInfo =
                 helperFormatPlaceInfo(place.name, comment,
                                       place.formatted_address, place.rating,
                                       isOpenNow, openingHours);
-            const infowindow = new google.maps.InfoWindow({
-                content: formattedPlaceInfo,
-            });
-            marker.addListener('click', function() {
-              infowindow.open(map, marker);
-            });
+          } else {
+            formattedPlaceInfo =
+                helperFormatPlaceInfo(place.name, comment,
+                                      place.formatted_address, place.rating,
+                                      `Uknown: "${detailsStatus}"`,
+                                      [`Unknown: "${detailsStatus}"`]);
           }
+          // Add an information window about the place.
+          const infowindow = new google.maps.InfoWindow({
+              content: formattedPlaceInfo,
+          });
+          marker.addListener('click', function() {
+              infowindow.open(map, marker);
+          });
         });
       }
       map.setCenter(results[0].geometry.location);
