@@ -71,6 +71,7 @@ import java.lang.Math;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +84,11 @@ import org.owasp.encoder.Encode;
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
   public static final String REDIRECT_URL = "/index.html#contact_me";
-  private UserComment comment;
+  private static final List<String> SUPPORTED_IMAGE_FORMATS =
+      Arrays.asList("apng", "bmp", "gif", "ico", "cur", "jpg", "jpeg", "jfif", "pjpeg", "pjp",
+      "png", "svg", "tif", "tiff", "webp");
   private static final int DEFAULT_MAX_COMMENTS = 10;
+  private UserComment comment;
   private int currentPageId = 1;
   private InvalidInputFlags invalidInputFlags = new InvalidInputFlags();
 
@@ -318,8 +322,13 @@ public class DataServlet extends HttpServlet {
       return null;
     }
 
-    // We could check the validity of the file here, e.g. to make sure it's an image file
-    // https://stackoverflow.com/q/10779564/873165
+    // Check if the file is a valid image.
+    String filename = blobInfo.getFilename();
+    String[] splitFilename = filename.split("\\.");
+    String fileExtension = splitFilename[splitFilename.length - 1].toLowerCase();
+    if (!SUPPORTED_IMAGE_FORMATS.contains(fileExtension)) {
+      return null;
+    }
 
     // Use ImagesService to get a URL that points to the uploaded file.
     ImagesService imagesService = ImagesServiceFactory.getImagesService();
