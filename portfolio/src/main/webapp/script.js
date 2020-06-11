@@ -387,9 +387,11 @@ function addPlaceInfo(comment) {
           if (detailsStatus === google.maps.places.PlacesServiceStatus.OK) {
 
             // Obtaining operating hours information.
-            isOpenNow = detailsResults.opening_hours.isOpen();
-            openingHours = detailsResults.opening_hours.weekday_text;
-            
+            if (detailsResults.opening_hours) {
+              isOpenNow = detailsResults.opening_hours.isOpen();
+              openingHours = detailsResults.opening_hours.weekday_text;
+            }
+
             // Add marker at the place's coordinate.
             const marker =
                 new google.maps.Marker({title: place.name,
@@ -421,13 +423,14 @@ function addPlaceInfo(comment) {
  */
 function helperFormatPlaceInfo(name, comment, formattedAddress, rating,
     isOpenNow, openingHours) {
+  const safeImageUrl = comment.imageUrl ? comment.imageUrl : "";
   return '<div id="place-info-window">' +
            `<h3>${name}</h3>` +
            '<p><b>Visitors</b></p>' +
            `<p><em>${comment.name} (${comment.email})</em>
                comments on "${comment.placeQueryName}":<br>
                --> "${comment.commentContent}"</p>` +
-           `<img src="${comment.imageUrl}">` +
+           `<img src="${safeImageUrl}">` +
            `<p><b>Address</b> ${formattedAddress}</p>` +
            `<p><b>Rating</b> ${rating}</p>` +
            `<p><b>Currently open?</b> ${isOpenNow}</p>` +
