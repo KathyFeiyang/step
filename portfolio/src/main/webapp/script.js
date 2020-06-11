@@ -17,6 +17,7 @@
 
 let greetingIndex = 0;
 let enableCommentHistorySection = true;
+let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
 
 /**
@@ -38,6 +39,40 @@ function addCyclicGreeting() {
 }
 
 /**
+ * Obtain user authentication status and the corresponding action; add
+ * information to the page.
+ */
+async function getAuthentication() {
+  // Obtain authentication information.
+  const response = await fetch(`/authentication`);
+  const authenticationJson = await response.json();
+  isUserLoggedIn = authenticationJson.isUserLoggedIn;
+  const authenticationUrl = authenticationJson.authenticationUrl;
+  const userReference = authenticationJson.userReference;
+  const userEmail = authenticationJson.userEmail;
+
+  // Display authentication status and action on the page.
+  const authenticationInstructionHTML =
+      document.getElementById('authentication-instruction');
+  const authenticationUrlHTML = document.getElementById('authentication-url');
+  const userReferenceHTML = document.getElementById('user-reference');
+
+  if (isUserLoggedIn) {
+    authenticationInstructionHTML.innerHTML =
+        `<p>You are currently logged in as <b>${userEmail}</b>.` +
+        " You can log out by clicking on the link below.</p>";
+    authenticationUrlHTML.innerText = "Log out here";
+  } else {
+    authenticationInstructionHTML.innerText =
+        "You are not logged in." +
+        " Please log in below to submit comments and view the comment history.";
+    authenticationUrlHTML.innerText = "Log in here";
+  }
+  authenticationUrlHTML.href = authenticationUrl;
+  userReferenceHTML.innerText = userReference ? userReference : userEmail;
+}
+
+/**
  * Toggle the comment history section and either removing or restoring the
  * comments.
  */
@@ -47,34 +82,83 @@ async function toggleCommentHistorySection() {
 }
 
 /**
- * Fetches and adds a history of comments, and the theoretical maximum and
+ * A high-level function to implement comment-related features:
+ * (Content includes (1) comment submission; (2) comment history)
+ * 
+ * -- Authenticates the current user.
+ * -- Fetches and adds a history of comments, and the theoretical maximum and
  * default number of comments, the total number of pages, and the current
  * page ID, to the page.
- * Backup and restore comment history as necessary according to the disabling
- * and enabling of the comment history section.
- * Show a warning if the user input value of the number of comments to display
- * or page ID is invalid, or if the latest user input may be a XSS attack.
+ * -- Hides/backups and displays/restores comment submission/history sections as
+ * necessary according to the disabling and enabling of the comment history
+ * section, and whether the user is logged in.
+ * -- Shows a warning if the user input value of the number of comments to
+ * display or page ID is invalid, or if the latest user comment may be a XSS
+ * attack.
  */
 async function addComments(pageId) {
+  await getAuthentication();
+
+  // If the comment history section's content is fully prepared, we no longer
+  // need to fetch from the backend database.
+  checkCommentSubmissionSection();
+  if (!checkCommentHistorySection()) {
+    // Fetch and add comment history.
+    addCommentHistory(pageId);
+  }
+}
+
+/**
+ * Checks whether the comment submission section should be enabled, and only
+ * display the comment submission form if the user is logged in.
+ */
+function checkCommentSubmissionSection() {
+  const commentSubmissionSection = document
+      .getElementById('comment-submission-section');
+  commentSubmissionSection.style.display = isUserLoggedIn ? 'initial' : 'none';
+}
+
+/**
+ * Checks whether the comment history section should be enabled, and backup
+ * or restore the comment history section as needed; returns whether the
+ * comment history section content has been fully prepared (whether we no
+ * longer need to fetch comment history from the backend database).
+ */
+function checkCommentHistorySection() {
   const commentHistorySection = document
       .getElementById('comment-history-section');
-  // If the comment history section was disabled just now, backup the current
-  // content and remove that content from the page.
-  if (!enableCommentHistorySection) {
+
+  // If the comment history section was disabled just now or if the user is
+  // not logged in, backup the current comment history content and remove
+  // that content from the page. Additionally, if the user is not logged in,
+  // backup and remove the comment submission form.
+  if (!enableCommentHistorySection || !isUserLoggedIn) {
     if (!commentHistorySectionHTMLBackup) {
       commentHistorySectionHTMLBackup = commentHistorySection.innerHTML;
       commentHistorySection.innerHTML = '';
     }
-    return;
+    return true;
   }
   // If the comment history section was enabled just now, restore the content
-  // from backup and clear the backup content.
-  if (commentHistorySectionHTMLBackup) { // enableCommentHistorySection is true
+  // from backup and clear the backup content. Since the previous content is
+  // restored, refrain from fetching the comment history.
+  // (enableCommentHistorySection is true; isUserLoggedIn is also true.)
+  if (commentHistorySectionHTMLBackup) {
     commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
     commentHistorySectionHTMLBackup = '';
-    return;
+    return true;
   }
+  return false;
+}
 
+/**
+ * Fetches and adds a history of comments, and the theoretical maximum and
+ * default number of comments, the total number of pages, and the current
+ * page ID, to the page, as texts and as limits imposed on the input fields.
+ * Shows a warning if the user input value of the number of comments to display
+ * or page ID is invalid, or if the latest user comment may be a XSS attack.
+ */
+async function addCommentHistory(pageId) {
   // Obtain user input of maximum number of comments to display.
   const maxCommentsToDisplay = document
       .getElementById('max-comments-to-display').value;
@@ -83,6 +167,13 @@ async function addComments(pageId) {
   // as JSON from the Java servlet.
   const response = await fetch(`/data?` +
       `maxCommentsToDisplay=${maxCommentsToDisplay}&pageId=${pageId}`);
+  // If the response is a redirection, go to the redirected destination URL.
+  // This can happen when the user needs to log in before accessing the comment
+  // section.
+  if (response.redirected) {
+    window.location.replace(response.url);
+    return;
+  }
   const commentDataJson = await response.json();
   const comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
@@ -195,17 +286,15 @@ async function deleteCommentHistory() {
  * Presents a receipt for getting a user comment, in a pop-up window.
  */
 function presentPopupCommentReceipt() {
-  // Obtain user input comment content, name and email.
+  // Obtain user input comment content and name.
   const formElements = document.getElementById('comment-form').elements;
   const userComment = formElements[0].value;
   const userName = formElements[1].value;
-  const userEmail = formElements[2].value;
 
   // Construct user comment receipt.
   const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
-                  `We have recorded the following:\n` +
-                  `    *Message: "${userComment}"\n` +
-                  `    *Contact Information: ${userEmail}\n`;
+                  `You entered the following:\n` +
+                  `    *Message: "${userComment}"\n`;
 
   // Present comment receipt in a pop-up window.
   window.alert(receipt);

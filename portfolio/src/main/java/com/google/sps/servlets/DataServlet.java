@@ -55,6 +55,8 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.lang.Math;
@@ -69,6 +71,7 @@ import org.owasp.encoder.Encode;
 
 @WebServlet("/data")
 public class DataServlet extends HttpServlet {
+  public static final String REDIRECT_URL = "/index.html#contact_me";
   private UserComment comment;
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private int currentPageId = 1;
@@ -76,6 +79,14 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    UserService userService = UserServiceFactory.getUserService();
+
+    // Check if the user is logged-in; if not, the user must first login.
+    if (!userService.isUserLoggedIn()) {
+      response.sendRedirect(REDIRECT_URL);
+      return;
+    }
+
     // Query comment history from Datastore.
     Query commentHistoryQuery = new Query("UserComment").addSort("timestamp",
                                                                  SortDirection.DESCENDING);
@@ -109,7 +120,7 @@ public class DataServlet extends HttpServlet {
     String commentDataJson = gson.toJson(commentData);
     this.invalidInputFlags.resetInvalidInputFlags();
 
-    // Send the resultant JSON as the sevlet response.
+    // Send the resultant JSON as the servlet response.
     response.setContentType("application/json;");
     response.getWriter().println(commentDataJson);
   }
@@ -205,12 +216,13 @@ public class DataServlet extends HttpServlet {
     for (int commentIndex = startCommentIndex; commentIndex < endCommentIndex; commentIndex++) {
       // Convert comment Datastore Entity object into UserComment objects.
       Entity commentEntity = commentHistoryList.get(commentIndex);
+      String userId = (String) commentEntity.getProperty("userId");
       String message = (String) commentEntity.getProperty("message");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
       String petPreference = (String) commentEntity.getProperty("petPreference");
 
-      UserComment commentItem = new UserComment(message, name, email, petPreference);
+      UserComment commentItem = new UserComment(userId, message, name, email, petPreference);
       comments.add(commentItem);
     }
     return comments;
@@ -218,26 +230,35 @@ public class DataServlet extends HttpServlet {
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    UserService userService = UserServiceFactory.getUserService();
+
+    // Check if the user is logged-in; if not, the user must first login.
+    if (!userService.isUserLoggedIn()) {
+      response.sendRedirect(REDIRECT_URL);
+      return;
+    }
+
     // Obtain user input from submitted form and timestamp.
+    String userId = userService.getCurrentUser().getUserId();
     String message = request.getParameter("message");
     String name = request.getParameter("message-sender-name");
-    String email = request.getParameter("message-sender-email");
+    String email = userService.getCurrentUser().getEmail();
     String petPreference = request.getParameter("user-pet-preference");
     // Refrain from adding to the database if the user input is a potentially XSS attack.
     // Users select petPreference from a set of predefined options, so petPreference is safe.
-    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name)) ||
-        !email.equals(Encode.forHtml(email))) {
+    if (!message.equals(Encode.forHtml(message)) || !name.equals(Encode.forHtml(name))) {
       this.invalidInputFlags.setIsLatestInputDangerous();
-      response.sendRedirect("/index.html#contact_me");
+      response.sendRedirect(REDIRECT_URL);
       return;
     }
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new UserComment(message, name, email, petPreference);
+    comment = new UserComment(userId, message, name, email, petPreference);
 
     // Create corresponding Datastore entity.
     Entity commentEntity = new Entity("UserComment");
+    commentEntity.setProperty("userId", comment.getUserId());
     commentEntity.setProperty("message", comment.getMessage());
     commentEntity.setProperty("name", comment.getName());
     commentEntity.setProperty("email", comment.getEmail());
@@ -249,7 +270,7 @@ public class DataServlet extends HttpServlet {
     datastore.put(commentEntity);
 
     // Redirect back to the homepage's "Contact Me" section.
-    response.sendRedirect("/index.html#contact_me");
+    response.sendRedirect(REDIRECT_URL);
   }
 
   private class CommentDataPackage {
@@ -297,17 +318,23 @@ public class DataServlet extends HttpServlet {
 }
 
 class UserComment {
+  private String userId;
   private String message;
   private String name;
   private String email;
   private String petPreference;
 
-  public UserComment(String inputMessage, String inputName, String inputEmail,
+  public UserComment(String inputUserId, String inputMessage, String inputName, String inputEmail,
       String inputPetPreference) {
+    this.userId = inputUserId;
     this.message = inputMessage;
     this.name = inputName;
     this.email = inputEmail;
     this.petPreference = inputPetPreference;
+  }
+
+  public String getUserId() {
+    return this.userId;
   }
 
   public String getMessage() {
@@ -328,7 +355,7 @@ class UserComment {
 
   @Override
   public String toString() {
-    return String.format("UserComment:\nMessage=%s\nName=%s\nEmail=%s\n[Loves %s!]\n",
-                         this.message, this.name, this.email, this.petPreference);
+    return String.format("UserComment:\nMessage=%s\nName=%s (ID=%s)\nEmail=%s\n[Loves %s!]\n",
+                         this.message, this.name, this.userId, this.email, this.petPreference);
   }
 }

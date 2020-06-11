@@ -20,6 +20,8 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
 import java.io.IOException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -31,6 +33,14 @@ public class DeleteDataServlet extends HttpServlet {
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    UserService userService = UserServiceFactory.getUserService();
+
+    // Check if the user is logged-in; if not, the user must first login.
+    if (!userService.isUserLoggedIn()) {
+      response.sendRedirect(DataServlet.REDIRECT_URL);
+      return;
+    }
+
     // Query comment history from Datastore database.
     Query commentHistoryQuery = new Query("UserComment");
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -43,6 +53,6 @@ public class DeleteDataServlet extends HttpServlet {
     }
 
     // Redirect back to the homepage's "Contact Me" section.
-    response.sendRedirect("/index.html#contact_me");
+    response.sendRedirect(DataServlet.REDIRECT_URL);
   }
 }
