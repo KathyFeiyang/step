@@ -16,6 +16,7 @@
 "use strict"
 
 let greetingIndex = 0;
+let comments;
 let enableCommentHistorySection = true;
 let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
@@ -157,7 +158,7 @@ function checkCommentHistorySection() {
     commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
     commentHistorySectionHTMLBackup = '';
     if (isMapLibrariesLoaded) {
-      window.addPlacesToMap();
+      window.addPlacesToMap(comments);
     }
     return true;
   }
@@ -188,7 +189,7 @@ async function addCommentHistory(pageId) {
     return;
   }
   const commentDataJson = await response.json();
-  const comments = commentDataJson.comments;
+  comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
   const totalPages = commentDataJson.totalPages;
