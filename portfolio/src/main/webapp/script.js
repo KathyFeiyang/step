@@ -261,11 +261,12 @@ async function addCommentHistory(pageId) {
 /**
  * Helper function to construct a formatted String of a comment.
  */
-function helperFormatComment(commentJson) {
-  return `${commentJson.name} (${commentJson.email}):\n` +
-         `--> comments on ${commentJson.placeQueryName}:` +
-         ` "${commentJson.commentContent}"\n` +
-         `--> loves ${commentJson.petPreference}!\n`;
+function helperFormatComment(comment) {
+  const userInfo = comment.userInfo;
+  return `${userInfo.name} (${userInfo.email}):\n` +
+         `--> comments on ${comment.placeQueryName}:` +
+         ` "${comment.commentContent}"\n` +
+         `--> loves ${userInfo.petPreference}!\n`;
 }
 
 /**
@@ -323,8 +324,9 @@ function presentPopupCommentReceipt() {
 }
 
 /**
- * Add a Google map and add information regarding places referenced in the
- * comments through associated markers and information windows, asynchronously.
+ * Asynchronously adds a Google map and add information regarding places
+ * referenced in the comments through associated markers and information
+ * windows.
  */
 function addMap() {
   const mapScript = document.createElement('script');
@@ -353,7 +355,6 @@ function addMap() {
     }
   };
 
-  // Append map's 'script' element to 'head'.
   document.head.appendChild(mapScript);
 }
 
@@ -371,7 +372,6 @@ function addPlaceInfo(comment) {
   // Query for information using Place Search.
   service.findPlaceFromQuery(request, function(results, status) {
     if (status === google.maps.places.PlacesServiceStatus.OK) {
-
       for (let i = 0; i < results.length; i++) {
         let place = results[i];
         let isOpenNow;
@@ -432,11 +432,12 @@ function addPlaceInfo(comment) {
  */
 function helperFormatPlaceInfo(name, comment, formattedAddress, rating,
     isOpenNow, openingHours) {
+  const userInfo = comment.userInfo;
   const safeImageUrl = comment.imageUrl ? comment.imageUrl : "";
   return '<div id="place-info-window">' +
            `<h3>${name}</h3>` +
            '<p><b>Visitors</b></p>' +
-           `<p><em>${comment.name} (${comment.email})</em>
+           `<p><em>${userInfo.name} (${userInfo.email})</em>
                comments on "${comment.placeQueryName}":<br>
                --> "${comment.commentContent}"</p>` +
            `<img src="${safeImageUrl}">` +

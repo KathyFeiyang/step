@@ -232,15 +232,16 @@ public class DataServlet extends HttpServlet {
       // Convert comment Datastore Entity object into UserComment objects.
       Entity commentEntity = commentHistoryList.get(commentIndex);
       String userId = (String) commentEntity.getProperty("userId");
-      String placeQueryName = (String) commentEntity.getProperty("placeQueryName");
-      String commentContent = (String) commentEntity.getProperty("commentContent");
       String name = (String) commentEntity.getProperty("name");
       String email = (String) commentEntity.getProperty("email");
       String petPreference = (String) commentEntity.getProperty("petPreference");
+      UserInfo userInfo = new UserInfo(userId, name, email, petPreference);
+      String placeQueryName = (String) commentEntity.getProperty("placeQueryName");
+      String commentContent = (String) commentEntity.getProperty("commentContent");
       String imageUrl = (String) commentEntity.getProperty("imageUrl");
 
-      UserComment commentItem = new UserComment(userId, placeQueryName, commentContent, name,
-                                                email, petPreference, imageUrl);
+      UserComment commentItem = new UserComment(userInfo, placeQueryName, commentContent,
+                                                imageUrl);
       comments.add(commentItem);
     }
     return comments;
@@ -258,18 +259,19 @@ public class DataServlet extends HttpServlet {
 
     // Obtain user input from submitted form and timestamp.
     String userId = userService.getCurrentUser().getUserId();
-    String placeQueryName = request.getParameter("place-query-name");
-    String commentContent = request.getParameter("comment-content");
     String name = request.getParameter("comment-sender-name");
     String email = userService.getCurrentUser().getEmail();
     String petPreference = request.getParameter("user-pet-preference");
+    UserInfo userInfo = new UserInfo(userId, name, email, petPreference);
+    String placeQueryName = request.getParameter("place-query-name");
+    String commentContent = request.getParameter("comment-content");
     // Get the URL of the image that the user uploaded to Blobstore.
     String imageUrl = getUploadedFileUrl(request, "comment-image");
     // Refrain from adding to the database if the user input is a potentially XSS attack.
     // Users select petPreference from a set of predefined options, so petPreference is safe.
-    if (!placeQueryName.equals(Encode.forHtml(placeQueryName)) ||
-        !commentContent.equals(Encode.forHtml(commentContent)) ||
-        !name.equals(Encode.forHtml(name))) {
+    if (!name.equals(Encode.forHtml(name)) ||
+        !placeQueryName.equals(Encode.forHtml(placeQueryName)) ||
+        !commentContent.equals(Encode.forHtml(commentContent))) {
       this.invalidInputFlags.setIsLatestInputDangerous();
       response.sendRedirect(REDIRECT_URL);
       return;
@@ -277,17 +279,16 @@ public class DataServlet extends HttpServlet {
     long timestamp = System.currentTimeMillis();
 
     // Pack user input into an object.
-    comment = new UserComment(userId, placeQueryName, commentContent, name, email, petPreference,
-                              imageUrl);
+    comment = new UserComment(userInfo, placeQueryName, commentContent, imageUrl);
 
     // Create corresponding Datastore entity.
     Entity commentEntity = new Entity("UserComment");
-    commentEntity.setProperty("userId", comment.getUserId());
+    commentEntity.setProperty("userId", userInfo.getUserId());
+    commentEntity.setProperty("name", userInfo.getName());
+    commentEntity.setProperty("email", userInfo.getEmail());
+    commentEntity.setProperty("petPreference", userInfo.getPetPreference());
     commentEntity.setProperty("placeQueryName", comment.getPlaceQueryName());
     commentEntity.setProperty("commentContent", comment.getCommentContent());
-    commentEntity.setProperty("name", comment.getName());
-    commentEntity.setProperty("email", comment.getEmail());
-    commentEntity.setProperty("petPreference", comment.getPetPreference());
     commentEntity.setProperty("imageUrl", comment.getImageUrl());
     commentEntity.setProperty("timestamp", timestamp);
 
@@ -301,11 +302,15 @@ public class DataServlet extends HttpServlet {
 
   /** 
    * Returns a URL that points to the uploaded file, or null if the user didn't upload a file.
+   *
+   * @param request the request sent to this servlet which contains all user submitted data.
+   * @param formInputElementName the name of the file input element on the HTML submission form.
+   * @return URL of the uploaded file hosted on Blobstore.
    */
   private String getUploadedFileUrl(HttpServletRequest request, String formInputElementName) {
     BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
     Map<String, List<BlobKey>> blobs = blobstoreService.getUploads(request);
-    List<BlobKey> blobKeys = blobs.get("comment-image");
+    List<BlobKey> blobKeys = blobs.get(formInputElementName);
 
     // User submitted form without selecting a file, so we can't get a URL. (dev server)
     if (blobKeys == null || blobKeys.isEmpty()) {
@@ -324,9 +329,7 @@ public class DataServlet extends HttpServlet {
 
     // Check if the file is a valid image.
     String filename = blobInfo.getFilename();
-    String[] splitFilename = filename.split("\\.");
-    String fileExtension = splitFilename[splitFilename.length - 1].toLowerCase();
-    if (!SUPPORTED_IMAGE_FORMATS.contains(fileExtension)) {
+    if (!isValidImage(filename)) {
       return null;
     }
 
@@ -341,6 +344,22 @@ public class DataServlet extends HttpServlet {
       return url.getPath();
     } catch (MalformedURLException e) {
       return imagesService.getServingUrl(options);
+    }
+  }
+
+  /** 
+   * Checks whether an image file belongs to the set of supported image formats.
+   *
+   * @param filename the file name of an image.
+   * @return whether said image is of a supported format.
+   */
+  private boolean isValidImage(String filename) {
+    String[] splitFilename = filename.split("\\.");
+    String fileExtension = splitFilename[splitFilename.length - 1].toLowerCase();
+    if (SUPPORTED_IMAGE_FORMATS.contains(fileExtension)) {
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -389,27 +408,21 @@ public class DataServlet extends HttpServlet {
 }
 
 class UserComment {
-  private String userId;
+  private UserInfo userInfo;
   private String placeQueryName;
   private String commentContent;
-  private String name;
-  private String email;
-  private String petPreference;
   private String imageUrl;
 
-  public UserComment(String inputUserId, String inputPlaceQueryName, String inputCommentContent,
-      String inputName, String inputEmail, String inputPetPreference, String inputImageUrl) {
-    this.userId = inputUserId;
+  public UserComment(UserInfo inputUserInfo, String inputPlaceQueryName,
+      String inputCommentContent, String inputImageUrl) {
+    this.userInfo = inputUserInfo;
     this.placeQueryName = inputPlaceQueryName;
     this.commentContent = inputCommentContent;
-    this.name = inputName;
-    this.email = inputEmail;
-    this.petPreference = inputPetPreference;
     this.imageUrl = inputImageUrl;
   }
 
-  public String getUserId() {
-    return this.userId;
+  public UserInfo getUserInfo() {
+    return this.userInfo;
   }
 
   public String getPlaceQueryName() {
@@ -418,6 +431,35 @@ class UserComment {
 
   public String getCommentContent() {
     return this.commentContent;
+  }
+
+  public String getImageUrl() {
+    return this.imageUrl;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("UserComment:\nUser Info=%s\nPlace Name=%s\nComment=%s\nImage URL=%s\n",
+                         this.userInfo, this.placeQueryName, this.commentContent, this.imageUrl);
+  }
+}
+
+class UserInfo {
+  private String userId;
+  private String name;
+  private String email;
+  private String petPreference;
+
+  public UserInfo(String inputUserId, String inputName, String inputEmail,
+      String inputPetPreference) {
+    this.userId = inputUserId;
+    this.name = inputName;
+    this.email = inputEmail;
+    this.petPreference = inputPetPreference;
+  }
+
+  public String getUserId() {
+    return this.userId;
   }
 
   public String getName() {
@@ -432,15 +474,9 @@ class UserComment {
     return this.petPreference;
   }
 
-  public String getImageUrl() {
-    return this.imageUrl;
-  }
-
   @Override
   public String toString() {
-    return String.format("UserComment:\nPlace Name=%s\nComment=%s\nName=%s (ID=%s)\nEmail=%s\n" +
-                         "[Loves %s!]\n",
-                         this.placeQueryName, this.commentContent, this.name, this.userId,
-                         this.email, this.petPreference);
+    return String.format("UserInfo:\nName=%s (ID=%s)\nEmail=%s\n[Loves %s!]\n",
+                         this.name, this.userId, this.email, this.petPreference);
   }
 }
