@@ -22,6 +22,8 @@ let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
 let map;
 let isMapLibrariesLoaded = false;
+let mapMarkers;
+let mapInfoWindows;
 const mapInitialZoom = 12;
 const APIKey = config.APIKey;
 const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
@@ -107,6 +109,10 @@ async function toggleCommentHistorySection() {
  * -- Shows a warning if the user input value of the number of comments to
  * display or page ID is invalid, or if the latest user comment may be a XSS
  * attack.
+ * -- Displays a map on which markers and information windows show places that
+ * are referenced in the comments and their respective comment contents and
+ * images. Clicking on a comment in the comment history section will center the
+ * map on the corresponding marker and information window.
  */
 async function addComments(pageId) {
   await getAuthentication();
@@ -172,6 +178,10 @@ function checkCommentHistorySection() {
  * page ID, to the page, as texts and as limits imposed on the input fields.
  * Shows a warning if the user input value of the number of comments to display
  * or page ID is invalid, or if the latest user comment may be a XSS attack.
+ * Displays a map on which markers and information windows show places that
+ * are referenced in the comments and their respective comment contents and
+ * images. Clicking on a comment in the comment history section will center the
+ * map on the corresponding marker and information window.
  */
 async function addCommentHistory(pageId) {
   // Obtain user input of maximum number of comments to display.
@@ -201,13 +211,23 @@ async function addCommentHistory(pageId) {
   const isLatestInputDangerous = invalidInputFlags.isLatestInputDangerous;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
-  // Format each comment as an item in a HTML list structure.
+  // Add comments and detailed information about the referenced places to the
+  // map.
+  if (isMapLibrariesLoaded) {
+    window.addPlacesToMap(comments);
+  }
+
+  // Format each comment as an item in a HTML list structure. Link each element
+  // to the corresponding map marker and information window.
   const commentHistoryHTML = document.getElementById('comment-container');
   commentHistoryHTML.innerHTML = '';
   for (let i = 0; i < comments.length; i++) {
     const formattedComment = helperFormatComment(comments[i]);
     const commentItem = document.createElement('li');
-    commentItem.innerText = formattedComment;
+    const clickableComment = document.createElement('a');
+    clickableComment.onclick = function() {centerOnMarkerAndOpenInfoWindow(i)};
+    clickableComment.innerText = formattedComment;
+    commentItem.appendChild(clickableComment);
     commentHistoryHTML.appendChild(commentItem);
     commentHistoryHTML.appendChild(document.createElement('br'));
   }
@@ -252,12 +272,6 @@ async function addCommentHistory(pageId) {
                                ' potential XSS attack.\n' +
                                'It would not be stored. Please try again.' +
                                ' Thank you!');
-
-  // Add comments and detailed information about the referenced places to the
-  // map.
-  if (isMapLibrariesLoaded) {
-    window.addPlacesToMap(comments);
-  }
 }
 
 /**
@@ -346,6 +360,8 @@ function addMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: mapInitialZoom,
     });
+    mapMarkers = [];
+    mapInfoWindows = [];
 
     // Obtain information about the places referenced in the comments, and
     // add that information and the corresponding comments to the map.
@@ -390,6 +406,7 @@ function addPlaceInfo(comment) {
             new google.maps.Marker({title: place.name,
                                     position: place.geometry.location,
                                     map: map});
+        mapMarkers.push(marker);
 
         // Query for additional information using Place Details.
         service.getDetails(detailsRequest,
@@ -415,17 +432,34 @@ function addPlaceInfo(comment) {
                                       [`Unknown: "${detailsStatus}"`]);
           }
           // Add an information window about the place.
-          const infowindow = new google.maps.InfoWindow({
+          const infoWindow = new google.maps.InfoWindow({
               content: formattedPlaceInfo,
           });
+          mapInfoWindows.push(infoWindow);
           marker.addListener('click', function() {
-              infowindow.open(map, marker);
+              infoWindow.open(map, marker);
           });
         });
       }
       map.setCenter(results[0].geometry.location);
     }
   });
+}
+
+/**
+ * Centers the map on the commentIndex-th marker and opens the corresponding
+ * information window.
+ */
+function centerOnMarkerAndOpenInfoWindow(commentIndex) {
+  try {
+    const marker = mapMarkers[commentIndex];
+    map.setCenter(marker.position);
+    const infoWindow = mapInfoWindows[commentIndex];
+    infoWindow.open(map, marker);
+  } catch (err) {
+    console.log('Could not center on marker/open the information window:' +
+                ` ${err.message}`);
+  }
 }
 
 /**
