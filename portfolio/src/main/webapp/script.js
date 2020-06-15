@@ -22,8 +22,8 @@ let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
 let map;
 let isMapLibrariesLoaded = false;
-let mapMarkers;
-let mapInfoWindows;
+let mapMarkersDict;
+let mapInfoWindowsDict;
 const mapInitialZoom = 12;
 const APIKey = config.APIKey;
 const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
@@ -170,11 +170,14 @@ function checkCommentHistorySection() {
       // Relink each comment to the new marker and information window, in the
       // existing, just-restored HTML.
       // commentItemsList = [<li>, <br>, <li>, ...]
-      const commentItemsList = document.getElementById('comment-container').children;
+      const commentItemsList = document
+          .getElementById('comment-container').children;
       for (let i = 0; i < commentItemsList.length / 2; i++) {
         const commentItem = commentItemsList[i * 2];
         const clickableComment = commentItem.children[0];
-        clickableComment.onclick = function() {centerOnMarkerAndOpenInfoWindow(i)};
+        clickableComment.onclick = function() {
+          centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
+        };
       }
     }
     return true;
@@ -235,7 +238,9 @@ async function addCommentHistory(pageId) {
     const formattedComment = helperFormatComment(comments[i]);
     const commentItem = document.createElement('li');
     const clickableComment = document.createElement('a');
-    clickableComment.onclick = function() {centerOnMarkerAndOpenInfoWindow(i)};
+    clickableComment.onclick = function() {
+      centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
+    };
     clickableComment.innerText = formattedComment;
     commentItem.appendChild(clickableComment);
     commentHistoryHTML.appendChild(commentItem);
@@ -370,8 +375,8 @@ function addMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: mapInitialZoom,
     });
-    mapMarkers = [];
-    mapInfoWindows = [];
+    mapMarkersDict = {};
+    mapInfoWindowsDict = {};
 
     // Obtain information about the places referenced in the comments, and
     // add that information and the corresponding comments to the map.
@@ -416,7 +421,7 @@ function addPlaceInfo(comment) {
             new google.maps.Marker({title: place.name,
                                     position: place.geometry.location,
                                     map: map});
-        mapMarkers.push(marker);
+        mapMarkersDict[comment.placeQueryName] = marker;
 
         // Query for additional information using Place Details.
         service.getDetails(detailsRequest,
@@ -445,7 +450,7 @@ function addPlaceInfo(comment) {
           const infoWindow = new google.maps.InfoWindow({
               content: formattedPlaceInfo,
           });
-          mapInfoWindows.push(infoWindow);
+          mapInfoWindowsDict[comment.placeQueryName] = infoWindow;
           marker.addListener('click', function() {
               infoWindow.open(map, marker);
           });
@@ -460,11 +465,11 @@ function addPlaceInfo(comment) {
  * Centers the map on the commentIndex-th marker and opens the corresponding
  * information window.
  */
-function centerOnMarkerAndOpenInfoWindow(commentIndex) {
+function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
   try {
-    const marker = mapMarkers[commentIndex];
+    const marker = mapMarkersDict[placeQueryName];
     map.setCenter(marker.position);
-    const infoWindow = mapInfoWindows[commentIndex];
+    const infoWindow = mapInfoWindowsDict[placeQueryName];
     infoWindow.open(map, marker);
   } catch (err) {
     console.log('Could not center on marker/open the information window:' +
