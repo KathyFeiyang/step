@@ -16,9 +16,17 @@
 "use strict"
 
 let greetingIndex = 0;
+let comments;
 let enableCommentHistorySection = true;
 let isUserLoggedIn = false;
 let commentHistorySectionHTMLBackup = '';
+let map;
+let isMapLibrariesLoaded = false;
+let mapMarkersDict;
+let mapInfoWindowsDict;
+const mapInitialZoom = 12;
+const APIKey = config.APIKey;
+const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
 
 /**
  * Adds a cyclic greeting to the page.
@@ -73,6 +81,15 @@ async function getAuthentication() {
 }
 
 /**
+ * Obtains and sets the URL to which comment form images should be submitted.
+ */
+async function getBlobstoreUploadUrl() {
+  const response = await fetch('/blobstore-upload-url');
+  const blobstoreUploadUrl = await response.text();
+  document.getElementById('comment-form').action = blobstoreUploadUrl;
+}
+
+/**
  * Toggle the comment history section and either removing or restoring the
  * comments.
  */
@@ -95,6 +112,10 @@ async function toggleCommentHistorySection() {
  * -- Shows a warning if the user input value of the number of comments to
  * display or page ID is invalid, or if the latest user comment may be a XSS
  * attack.
+ * -- Displays a map on which markers and information windows show places that
+ * are referenced in the comments and their respective comment contents and
+ * images. Clicking on a comment in the comment history section will center the
+ * map on the corresponding marker and information window.
  */
 async function addComments(pageId) {
   await getAuthentication();
@@ -146,6 +167,22 @@ function checkCommentHistorySection() {
   if (commentHistorySectionHTMLBackup) {
     commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
     commentHistorySectionHTMLBackup = '';
+    if (isMapLibrariesLoaded) {
+      // Reload the map.
+      window.addPlacesToMap(comments);
+      // Relink each comment to the new marker and information window, in the
+      // existing, just-restored HTML.
+      // commentItemsList = [<li>, <br>, <li>, ...]
+      const commentItemsList = document
+          .getElementById('comment-container').children;
+      for (let i = 0; i < commentItemsList.length / 2; i++) {
+        const commentItem = commentItemsList[i * 2];
+        const clickableComment = commentItem.children[0];
+        clickableComment.onclick = function() {
+          centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
+        };
+      }
+    }
     return true;
   }
   return false;
@@ -157,6 +194,10 @@ function checkCommentHistorySection() {
  * page ID, to the page, as texts and as limits imposed on the input fields.
  * Shows a warning if the user input value of the number of comments to display
  * or page ID is invalid, or if the latest user comment may be a XSS attack.
+ * Displays a map on which markers and information windows show places that
+ * are referenced in the comments and their respective comment contents and
+ * images. Clicking on a comment in the comment history section will center the
+ * map on the corresponding marker and information window.
  */
 async function addCommentHistory(pageId) {
   // Obtain user input of maximum number of comments to display.
@@ -175,7 +216,7 @@ async function addCommentHistory(pageId) {
     return;
   }
   const commentDataJson = await response.json();
-  const comments = commentDataJson.comments;
+  comments = commentDataJson.comments;
   const totalComments = commentDataJson.totalComments;
   const defaultMaxComments = commentDataJson.defaultMaxComments;
   const totalPages = commentDataJson.totalPages;
@@ -186,13 +227,25 @@ async function addCommentHistory(pageId) {
   const isLatestInputDangerous = invalidInputFlags.isLatestInputDangerous;
   console.log(`CONFIRM: addComments() fetched ${comments.length} comments.\n`);
 
-  // Format each comment as an item in a HTML list structure.
+  // Add comments and detailed information about the referenced places to the
+  // map.
+  if (isMapLibrariesLoaded) {
+    window.addPlacesToMap(comments);
+  }
+
+  // Format each comment as an item in a HTML list structure. Link each element
+  // to the corresponding map marker and information window.
   const commentHistoryHTML = document.getElementById('comment-container');
   commentHistoryHTML.innerHTML = '';
   for (let i = 0; i < comments.length; i++) {
-    const commentFormatted = helperFormatComment(comments[i]);
+    const formattedComment = helperFormatComment(comments[i]);
     const commentItem = document.createElement('li');
-    commentItem.innerText = commentFormatted;
+    const clickableComment = document.createElement('a');
+    clickableComment.onclick = function() {
+      centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
+    };
+    clickableComment.innerText = formattedComment;
+    commentItem.appendChild(clickableComment);
     commentHistoryHTML.appendChild(commentItem);
     commentHistoryHTML.appendChild(document.createElement('br'));
   }
@@ -242,10 +295,12 @@ async function addCommentHistory(pageId) {
 /**
  * Helper function to construct a formatted String of a comment.
  */
-function helperFormatComment(commentJson) {
-  return `${commentJson.name} (${commentJson.email}):\n` +
-         `--> says "${commentJson.message}"\n` +
-         `--> loves ${commentJson.petPreference}!\n`;
+function helperFormatComment(comment) {
+  const userInfo = comment.userInfo;
+  return `${userInfo.name} (${userInfo.email}):\n` +
+         `--> comments on ${comment.placeQueryName}:` +
+         ` "${comment.commentContent}"\n` +
+         `--> loves ${userInfo.petPreference}!\n`;
 }
 
 /**
@@ -288,16 +343,168 @@ async function deleteCommentHistory() {
 function presentPopupCommentReceipt() {
   // Obtain user input comment content and name.
   const formElements = document.getElementById('comment-form').elements;
-  const userComment = formElements[0].value;
-  const userName = formElements[1].value;
+  const userPlaceName = formElements[0].value;
+  const userComment = formElements[1].value;
+  const userName = formElements[2].value;
 
   // Construct user comment receipt.
   const receipt = `Dear ${userName},\nThank you for submitting feedback!\n` +
                   `You entered the following:\n` +
-                  `    *Message: "${userComment}"\n`;
+                  `    *Place Name: ${userPlaceName}\n` +
+                  `    *Comment: "${userComment}"\n`;
 
   // Present comment receipt in a pop-up window.
   window.alert(receipt);
+}
+
+/**
+ * Asynchronously adds a Google map and add information regarding places
+ * referenced in the comments through associated markers and information
+ * windows.
+ */
+function addMap() {
+  const mapScript = document.createElement('script');
+  // Load Maps and Places API asynchronously.
+  mapScript.src = 'https://maps.googleapis.com/maps/api/js?' +
+               `key=${APIKey}&libraries=places&callback=addPlacesToMap`;
+  mapScript.defer = true;
+  mapScript.async = true;
+
+  // Attach the callback function to the `window` object
+  window.addPlacesToMap = function(comments) {
+    isMapLibrariesLoaded = true;
+    // Upon invoking the callback function, the Maps and Places libraries
+    // are loaded.
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: mapInitialZoom,
+    });
+    mapMarkersDict = {};
+    mapInfoWindowsDict = {};
+
+    // Obtain information about the places referenced in the comments, and
+    // add that information and the corresponding comments to the map.
+    if (!comments) {
+      return;
+    }
+    for (let i = 0; i < comments.length; i++) {
+      addPlaceInfo(comments[i]);
+    }
+  };
+
+  document.head.appendChild(mapScript);
+}
+
+/**
+ * Queries a place's information and embeds said information in the map using
+ * markers and information windows.
+ */
+function addPlaceInfo(comment) {
+  let request = {
+    query: comment.placeQueryName,
+    fields: ['place_id', 'name', 'geometry', 'formatted_address',
+              'rating', 'opening_hours'],
+  };
+  let service = new google.maps.places.PlacesService(map);
+  // Query for information using Place Search.
+  service.findPlaceFromQuery(request, function(results, status) {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      for (let i = 0; i < results.length; i++) {
+        let place = results[i];
+        let isOpenNow;
+        let openingHours;
+        const placeId = place.place_id;
+        const detailsRequest = {
+          placeId: placeId,
+          fields: ['opening_hours', 'utc_offset_minutes'],
+          // (utc_offset_minutes is required for opening_hours.isOpen()
+          // to work.)
+        };
+        // Add a marker at the place's coordinate.
+        const marker =
+            new google.maps.Marker({title: place.name,
+                                    position: place.geometry.location,
+                                    map: map});
+        mapMarkersDict[comment.placeQueryName] = marker;
+
+        // Query for additional information using Place Details.
+        service.getDetails(detailsRequest,
+            function(detailsResults, detailsStatus) {
+          let formattedPlaceInfo;
+          if (detailsStatus === google.maps.places.PlacesServiceStatus.OK) {
+            // Obtaining operating hours information.
+            if (detailsResults.opening_hours) {
+              isOpenNow = detailsResults.opening_hours.isOpen();
+              openingHours = detailsResults.opening_hours.weekday_text;
+            }
+            isOpenNow = isOpenNow ? isOpenNow : "Information not found."
+            openingHours = openingHours ? openingHours : ["Information not found."];
+            formattedPlaceInfo =
+                helperFormatPlaceInfo(place.name, comment,
+                                      place.formatted_address, place.rating,
+                                      isOpenNow, openingHours);
+          } else {
+            formattedPlaceInfo =
+                helperFormatPlaceInfo(place.name, comment,
+                                      place.formatted_address, place.rating,
+                                      `Uknown: "${detailsStatus}"`,
+                                      [`Unknown: "${detailsStatus}"`]);
+          }
+          // Add an information window about the place.
+          const infoWindow = new google.maps.InfoWindow({
+              content: formattedPlaceInfo,
+          });
+          mapInfoWindowsDict[comment.placeQueryName] = infoWindow;
+          marker.addListener('click', function() {
+              infoWindow.open(map, marker);
+          });
+        });
+      }
+      map.setCenter(results[0].geometry.location);
+    }
+  });
+}
+
+/**
+ * Centers the map on the commentIndex-th marker and opens the corresponding
+ * information window.
+ */
+function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
+  try {
+    const marker = mapMarkersDict[placeQueryName];
+    map.setCenter(marker.position);
+    const infoWindow = mapInfoWindowsDict[placeQueryName];
+    infoWindow.open(map, marker);
+  } catch (err) {
+    console.log('Could not center on marker/open the information window:' +
+                ` ${err.message}`);
+  }
+}
+
+/**
+ * Helper function to format a place's information and user's comment about the
+ * place in HTML.
+ */
+function helperFormatPlaceInfo(name, comment, formattedAddress, rating,
+    isOpenNow, openingHours) {
+  const userInfo = comment.userInfo;
+  let safeImageUrl = comment.imageUrl ? comment.imageUrl : "";
+  let imageDescription = "User-shared image";
+  if (safeImageUrl === IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED) {
+    safeImageUrl = "";
+    imageDescription = "Image uploading is currently not supported.";
+  }
+  return '<div id="place-info-window">' +
+           `<h3>${name}</h3>` +
+           '<p><b>Visitors</b></p>' +
+           `<p><em>${userInfo.name} (${userInfo.email})</em>
+               comments on "${comment.placeQueryName}":<br>
+               --> "${comment.commentContent}"</p>` +
+           `<img src="${safeImageUrl}" alt="${imageDescription}">` +
+           `<p><b>Address</b> ${formattedAddress}</p>` +
+           `<p><b>Rating</b> ${rating}</p>` +
+           `<p><b>Currently open?</b> ${isOpenNow}</p>` +
+           `<p><b>Hours</b><br>${openingHours.join('<br>')}</p>`
+         '</div>';
 }
 
 /**

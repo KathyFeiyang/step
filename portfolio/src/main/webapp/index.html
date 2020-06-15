@@ -5,11 +5,12 @@
     <meta name="Feiyang (Kathy) Yu's Portfolio"
           content="Personal information and projects of Feiyang (Kathy) Yu">
     <link rel="stylesheet" href="/style.css">
+    <script src="/config.js"></script>
     <script src="/script.js"></script>
     <title>Kathy's Portfolio</title>
   </head>
 
-  <body onload="addComments(1)">
+  <body onload="addComments(1) & addMap() & getBlobstoreUploadUrl()">
     <nav id="nav" role="navigation" aria-label="navigation bar">
       <a href="/gallery.html">Photo Gallery</a>
       <a href="/blogs.html">Blog Posts</a>
@@ -108,12 +109,17 @@
       </div>
       <p><b>Comments</b></p>
       <div id="comment-submission-section">
-        <p><b>Submit your comments :)</b></p>
-        <form id="comment-form" onsubmit="presentPopupCommentReceipt() & getAuthentication()" action="/data" method="POST">
-          <label for="message">Enter your message here...<br></label>
-          <textarea id="message" name="message" required placeholder="Your comment..."></textarea><br>
-          <label for="message-sender-name">Your name [required]:</label>
-          <input type="text" id="message-sender-name" name="message-sender-name" required
+        <p><b>Submit your comments about places you visited :)</b></p>
+        <form id="comment-form" onsubmit="presentPopupCommentReceipt() & getAuthentication()"
+              action="/data" method="POST"  enctype="multipart/form-data">
+          <label for="place-query-name">Enter the name of the place here...<br></label>
+          <input type="text" id="place-query-name" name="place-query-name" required
+                 placeholder="A place..."><br>
+          <label for="comment-content">Enter your comment here...<br></label>
+          <textarea id="comment-content" name="comment-content" required
+                    placeholder="Your comment..."></textarea><br>
+          <label for="comment-sender-name">Your name [required]:</label>
+          <input type="text" id="comment-sender-name" name="comment-sender-name" required
                 placeholder="&lt;first name&gt; &lt;last name&gt;"><br>
           <label for="user-pet-preference">I love</label>
           <select name="user-pet-preference" id="user-pet-preference">
@@ -121,6 +127,9 @@
             <option value="dogs">dogs!</option>
             <option value="both cats and dogs">both!</option>
           </select>
+          <br>
+          <label for="comment-image">Upload image</label>
+          <input type="file" id="comment-image" name="comment-image">
           <br>
           <input class="button" type="submit" value="Submit">
         </form>
@@ -154,6 +163,8 @@
         <button onclick="deleteCommentHistory()">Delete comment history</button>
         <br>
         <hr>
+        <div id="map">map</div>
+        <hr>
       </div>
     </div>
 
@@ -163,7 +174,7 @@
 
     <!--- add aria -->
     <!--- Additional information about the page -->
-    <footer>Last modified on <time>2020-06-08</time>.</footer>
+    <footer>Last modified on <time>2020-06-10</time>.</footer>
     <small>
       <a href="https://images.app.goo.gl/7KAaY115zQBTwJw19">Credits to LinkedIn icon</a> <br>
       <a href="https://images.app.goo.gl/LPqzGXYEnvJWUCc38">Credits to GitHub icon</a>
