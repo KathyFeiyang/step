@@ -165,7 +165,17 @@ function checkCommentHistorySection() {
     commentHistorySection.innerHTML = commentHistorySectionHTMLBackup;
     commentHistorySectionHTMLBackup = '';
     if (isMapLibrariesLoaded) {
+      // Reload the map.
       window.addPlacesToMap(comments);
+      // Relink each comment to the new marker and information window, in the
+      // existing, just-restored HTML.
+      // commentItemsList = [<li>, <br>, <li>, ...]
+      const commentItemsList = document.getElementById('comment-container').children;
+      for (let i = 0; i < commentItemsList.length / 2; i++) {
+        const commentItem = commentItemsList[i * 2];
+        const clickableComment = commentItem.children[0];
+        clickableComment.onclick = function() {centerOnMarkerAndOpenInfoWindow(i)};
+      }
     }
     return true;
   }
