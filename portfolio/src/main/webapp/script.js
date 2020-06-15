@@ -242,6 +242,7 @@ async function addCommentHistory(pageId) {
       centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
     };
     clickableComment.innerText = formattedComment;
+    clickableComment.href = '#map';
     commentItem.appendChild(clickableComment);
     commentHistoryHTML.appendChild(commentItem);
     commentHistoryHTML.appendChild(document.createElement('br'));
