@@ -454,8 +454,7 @@ function addPlaceInfo(comment) {
           });
           mapInfoWindowsDict[comment.placeQueryName] = infoWindow;
           marker.addListener('click', function() {
-            infoWindow.open(map, marker);
-            closePreviouslyOpenedInfoWindow(infoWindow);
+            closePreviousAndOpenNewInfoWindow(infoWindow, marker);
           });
         });
       }
@@ -473,8 +472,7 @@ function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
     const marker = mapMarkersDict[placeQueryName];
     map.setCenter(marker.position);
     const infoWindow = mapInfoWindowsDict[placeQueryName];
-    infoWindow.open(map, marker);
-    closePreviouslyOpenedInfoWindow(infoWindow);
+    closePreviousAndOpenNewInfoWindow(infoWindow, marker);
   } catch (err) {
     console.log('Could not center on marker/open the information window:' +
                 ` ${err.message}`);
@@ -482,14 +480,19 @@ function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
 }
 
 /**
- * Closes the previously opened information window upon a new window being
- * opened, and makes a note of the newly opened information window.
+ * Closes the previously opened information window; opens and makes a note of
+ * the newly opened information window.
  */
-function closePreviouslyOpenedInfoWindow(newlyOpenedInfoWindow) {
+function closePreviousAndOpenNewInfoWindow(newInfoWindowToOpen, marker) {
+  // Opening the window (re-)centers the map on the window.
+  newInfoWindowToOpen.open(map, marker);
+  if (newInfoWindowToOpen === openInfoWindow) {
+    return;
+  }
   if (openInfoWindow) {
     openInfoWindow.close();
   }
-  openInfoWindow = newlyOpenedInfoWindow;
+  openInfoWindow = newInfoWindowToOpen;
 }
 
 /**
