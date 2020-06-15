@@ -24,6 +24,7 @@ let map;
 let isMapLibrariesLoaded = false;
 const mapInitialZoom = 12;
 const APIKey = config.APIKey;
+const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
 
 /**
  * Adds a cyclic greeting to the page.
@@ -434,14 +435,19 @@ function addPlaceInfo(comment) {
 function helperFormatPlaceInfo(name, comment, formattedAddress, rating,
     isOpenNow, openingHours) {
   const userInfo = comment.userInfo;
-  const safeImageUrl = comment.imageUrl ? comment.imageUrl : "";
+  let safeImageUrl = comment.imageUrl ? comment.imageUrl : "";
+  let imageDescription = "User-shared image";
+  if (safeImageUrl === IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED) {
+    safeImageUrl = "";
+    imageDescription = "Image uploading is currently not supported.";
+  }
   return '<div id="place-info-window">' +
            `<h3>${name}</h3>` +
            '<p><b>Visitors</b></p>' +
            `<p><em>${userInfo.name} (${userInfo.email})</em>
                comments on "${comment.placeQueryName}":<br>
                --> "${comment.commentContent}"</p>` +
-           `<img src="${safeImageUrl}">` +
+           `<img src="${safeImageUrl}" alt="${imageDescription}">` +
            `<p><b>Address</b> ${formattedAddress}</p>` +
            `<p><b>Rating</b> ${rating}</p>` +
            `<p><b>Currently open?</b> ${isOpenNow}</p>` +

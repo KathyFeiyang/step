@@ -62,6 +62,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.images.ImagesService;
 import com.google.appengine.api.images.ImagesServiceFactory;
+import com.google.appengine.api.images.ImagesServiceFailureException;
 import com.google.appengine.api.images.ServingUrlOptions;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
@@ -87,6 +88,7 @@ public class DataServlet extends HttpServlet {
   private static final List<String> SUPPORTED_IMAGE_FORMATS =
       Arrays.asList("apng", "bmp", "gif", "ico", "cur", "jpg", "jpeg", "jfif", "pjpeg", "pjp",
       "png", "svg", "tif", "tiff", "webp");
+  private static final String IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = "notSupportedOnDeployedServer";
   private static final int DEFAULT_MAX_COMMENTS = 10;
   private UserComment comment;
   private int currentPageId = 1;
@@ -327,7 +329,6 @@ public class DataServlet extends HttpServlet {
       return null;
     }
 
-    // Check if the file is a valid image.
     String filename = blobInfo.getFilename();
     if (!isValidImage(filename)) {
       return null;
@@ -344,6 +345,8 @@ public class DataServlet extends HttpServlet {
       return url.getPath();
     } catch (MalformedURLException e) {
       return imagesService.getServingUrl(options);
+    } catch (ImagesServiceFailureException e) {
+      return IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED;
     }
   }
 
@@ -356,11 +359,7 @@ public class DataServlet extends HttpServlet {
   private boolean isValidImage(String filename) {
     String[] splitFilename = filename.split("\\.");
     String fileExtension = splitFilename[splitFilename.length - 1].toLowerCase();
-    if (SUPPORTED_IMAGE_FORMATS.contains(fileExtension)) {
-      return true;
-    } else {
-      return false;
-    }
+    return SUPPORTED_IMAGE_FORMATS.contains(fileExtension);
   }
 
   private class CommentDataPackage {
