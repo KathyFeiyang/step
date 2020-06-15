@@ -24,6 +24,7 @@ let map;
 let isMapLibrariesLoaded = false;
 let mapMarkersDict;
 let mapInfoWindowsDict;
+let openInfoWindow;
 const mapInitialZoom = 12;
 const APIKey = config.APIKey;
 const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
@@ -453,7 +454,11 @@ function addPlaceInfo(comment) {
           });
           mapInfoWindowsDict[comment.placeQueryName] = infoWindow;
           marker.addListener('click', function() {
-              infoWindow.open(map, marker);
+            infoWindow.open(map, marker);
+            if (openInfoWindow) {
+              openInfoWindow.close();
+            }
+            openInfoWindow = infoWindow;
           });
         });
       }
@@ -472,6 +477,11 @@ function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
     map.setCenter(marker.position);
     const infoWindow = mapInfoWindowsDict[placeQueryName];
     infoWindow.open(map, marker);
+    if (openInfoWindow) {
+      // Close previously opened information window.
+      openInfoWindow.close();
+    }
+    openInfoWindow = infoWindow;
   } catch (err) {
     console.log('Could not center on marker/open the information window:' +
                 ` ${err.message}`);
