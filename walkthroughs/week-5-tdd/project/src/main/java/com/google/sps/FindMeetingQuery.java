@@ -18,63 +18,58 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public final class FindMeetingQuery {
 
+  /**
+  * Finds the available {@code TimeRange} for a set of attendees to satisfy a meeting
+  * {@code request}, given some existing {@code events} and their respective attendees.
+  * The resultant {@code TimeRange} do not overlap with one another and cover all possible
+  * gaps between the existing {@code events}. These {@code TimeRange} have the same length as
+  * or are longer than the requested meeting duration.
+  * First filters the existing {@code TimeRange} that correspond to {@code Event} having
+  * overlapping attendees with the {@code request}; we only need to avoid conflicting with
+  * those {@code TimeRange} that involve attendees contained in the {@code request}.
+  * Then finds the available {@code TimeRange} sandwiched between an existing, ending
+  * {@code TimeRange} and an existing starting {@code TimeRange}.
+  *
+  * @param events Existing events that each occupy some {@code TimeRange}.
+  * @param request A meeting request for some mandatory and optional attendees and a duration.
+  * @return All available {@code TimeRange} that satisfy the meeting request.
+  */
   public Collection<TimeRange> query(Collection<Event> events, MeetingRequest request) {
     Collection<TimeRange> availableTimeRanges = new ArrayList<>();
     Set<String> attendees = new HashSet<>(request.getAttendees());
-    long duration = request.getDuration();
+    long requestedDuration = request.getDuration();
 
-    if (Long.compare(duration, TimeRange.WHOLE_DAY.duration()) > 0) {
-      // If the requested duration is longer than the {@code WHOLE_DAY}, there can't be any
-      // {@code TimeRange} that satisfies the {@code request}.
+    if (Long.compare(requestedDuration, TimeRange.WHOLE_DAY.duration()) > 0) {
       return Arrays.asList();
     } else if (events.isEmpty() || attendees.isEmpty()) {
-      // If there are no existing {@code Event} or mandatory attendees, the {@code WHOLE_DAY}
-      // satisfies the request.
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    // Find existing {@code TimeRange} that correspond to {@code Event} having overlapping
-    // attendees with the {@code request}.
-    Collection<TimeRange> relevantTimeRanges = new HashSet<>();
-    for (Event event : events) {
-      // Make a shallow copy of the original set of attendees.
-      Set<String> overlappingAttendees = new HashSet<>(event.getAttendees());
-      overlappingAttendees.retainAll(attendees);
-      if (!overlappingAttendees.isEmpty()) {
-        relevantTimeRanges.add(event.getWhen());
-      }
-    }
+    Collection<TimeRange> relevantTimeRanges = getRelevantTimeRangesFromEvents(events, attendees);
     if (relevantTimeRanges.isEmpty()) {
-      // If there are no existing {@code Event} that contain overlapping attendees with the meeting
-      // request, the {@code WHOLE_DAY} satisfies the {@code request}.
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    // Sort the relevant {@code TimeRange} based on their start and end times respectively.
-    List<TimeRange> startOrderedTimeRanges = new ArrayList<>(relevantTimeRanges);
-    List<TimeRange> endOrderedTimeRanges = new ArrayList<>(relevantTimeRanges);
-    Collections.sort(startOrderedTimeRanges, TimeRange.ORDER_BY_START);
-    Collections.sort(endOrderedTimeRanges, TimeRange.ORDER_BY_END);
+    List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(relevantTimeRanges,
+                                                                  TimeRange.ORDER_BY_START);
+    List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(relevantTimeRanges,
+                                                                TimeRange.ORDER_BY_END);
 
-    // Add the available {@code TimeRange} before the first existing {@code TimeRange}, if
-    // said available {@code TimeRange} is long enough.
+    // Potentially add the {@code TimeRange} before the first existing {@code TimeRange}.
     TimeRange firstStartingTimeRange = startOrderedTimeRanges.get(0);
-    if (Long.compare(duration, firstStartingTimeRange.start() - TimeRange.START_OF_DAY) <= 0) {
-      availableTimeRanges.add(TimeRange.fromStartEnd(TimeRange.START_OF_DAY,
-                                                     firstStartingTimeRange.start(),
-                                                     false));
-    }
+    checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                          TimeRange.START_OF_DAY, firstStartingTimeRange.start(),
+                                          availableTimeRanges);
 
     // Find available {@code TimeRange} by looking at the available time between one ending
     // {@code TimeRange} and the immediately following starting {@code TimeRange}.
-    int availableTimeRangeStart;
-    int availableTimeRangeEnd;
     int startOrderedPointer = 0;
     int endOrderedPointer = 0;
     while (startOrderedPointer < startOrderedTimeRanges.size() &&
@@ -101,14 +96,11 @@ public final class FindMeetingQuery {
 
       // At this point, we have:
       //    |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
-      availableTimeRangeStart = endingTimeRange.end();
-      availableTimeRangeEnd = startingTimeRange.start();
-      int availableDuration = availableTimeRangeEnd - availableTimeRangeStart;
-      if (Long.compare(duration, availableDuration) <= 0) {
-        availableTimeRanges.add(
-            TimeRange.fromStartDuration(availableTimeRangeStart, availableDuration)
-        );
-      }
+      int availableTimeRangeStart = endingTimeRange.end();
+      int availableTimeRangeEnd = startingTimeRange.start();
+      checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                            availableTimeRangeStart, availableTimeRangeEnd,
+                                            availableTimeRanges);
 
       // Find the potential, next block of available time sandwiched between an ending and a
       // starting {@code TimeRange}.
@@ -119,15 +111,50 @@ public final class FindMeetingQuery {
       endOrderedPointer++;
     }
 
-    // Add the available {@code TimeRange} that comes after the last existing {@code TimeRange},
-    // if said available {@code TimeRange} is long enough.
+    // Potentially add the {@code TimeRange} after the last existing {@code TimeRange}.
     TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
-    if (Long.compare(duration, TimeRange.END_OF_DAY - lastEndingTimeRange.end() + 1) <= 0) {
-      availableTimeRanges.add(TimeRange.fromStartEnd(lastEndingTimeRange.end(),
-                                                     TimeRange.END_OF_DAY,
-                                                     true));
-    }
+    checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                          lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
+                                          availableTimeRanges);
 
     return availableTimeRanges;
+  }
+
+  /**
+  * Finds the existing {@code TimeRange} that correspond to {@code Event} having
+  * overlapping attendees with a set of attendees that we are concerned with.
+  */
+  private Collection<TimeRange> getRelevantTimeRangesFromEvents(Collection<Event> events,
+      Set<String> attendees) {
+    Collection<TimeRange> relevantTimeRanges = new HashSet<>();
+    for (Event event : events) {
+      Set<String> overlappingAttendees = new HashSet<>(event.getAttendees());
+      overlappingAttendees.retainAll(attendees);
+      if (!overlappingAttendees.isEmpty()) {
+        relevantTimeRanges.add(event.getWhen());
+      }
+    }
+    return relevantTimeRanges;
+  }
+
+  /**
+  * Sorts a collection of {@code TimeRange} based on the specified {@code sortOrder}.
+  */
+  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
+      Comparator<TimeRange> sortOrder) {
+    List<TimeRange> orderedTimeRanges = new ArrayList<>(timeRanges);
+    Collections.sort(orderedTimeRanges, sortOrder);
+    return orderedTimeRanges;
+  }
+
+  /**
+  * If a [start, end) represented {@code TimeRange} has a sufficient duration, adds it to the
+  * set of available {@code TimeRange}.
+  */
+  private void checkDurationAndAddAvailableTimeRange(long requestedDuration, int start, int end,
+      Collection<TimeRange> availableTimeRanges) {
+    if (Long.compare(requestedDuration, end - start) <= 0) {
+      availableTimeRanges.add(TimeRange.fromStartEnd(start, end, false));
+    }
   }
 }
