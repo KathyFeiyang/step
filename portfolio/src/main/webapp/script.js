@@ -24,6 +24,7 @@ let map;
 let isMapLibrariesLoaded = false;
 let mapMarkersDict;
 let mapInfoWindowsDict;
+let openInfoWindow;
 const mapInitialZoom = 12;
 const APIKey = config.APIKey;
 const IMAGE_UPLOAD_NOT_SUPPORTED_DEPLOYED = 'notSupportedOnDeployedServer';
@@ -245,6 +246,7 @@ async function addCommentHistory(pageId) {
       centerOnMarkerAndOpenInfoWindow(comments[i].placeQueryName);
     };
     clickableComment.innerText = formattedComment;
+    clickableComment.href = '#map';
     commentItem.appendChild(clickableComment);
     commentHistoryHTML.appendChild(commentItem);
     commentHistoryHTML.appendChild(document.createElement('br'));
@@ -455,7 +457,7 @@ function addPlaceInfo(comment) {
           });
           mapInfoWindowsDict[comment.placeQueryName] = infoWindow;
           marker.addListener('click', function() {
-              infoWindow.open(map, marker);
+            closePreviousAndOpenNewInfoWindow(infoWindow, marker);
           });
         });
       }
@@ -473,11 +475,27 @@ function centerOnMarkerAndOpenInfoWindow(placeQueryName) {
     const marker = mapMarkersDict[placeQueryName];
     map.setCenter(marker.position);
     const infoWindow = mapInfoWindowsDict[placeQueryName];
-    infoWindow.open(map, marker);
+    closePreviousAndOpenNewInfoWindow(infoWindow, marker);
   } catch (err) {
     console.log('Could not center on marker/open the information window:' +
                 ` ${err.message}`);
   }
+}
+
+/**
+ * Closes the previously opened information window; opens and makes a note of
+ * the newly opened information window.
+ */
+function closePreviousAndOpenNewInfoWindow(newInfoWindowToOpen, marker) {
+  // Opening the window (re-)centers the map on the window.
+  newInfoWindowToOpen.open(map, marker);
+  if (newInfoWindowToOpen === openInfoWindow) {
+    return;
+  }
+  if (openInfoWindow) {
+    openInfoWindow.close();
+  }
+  openInfoWindow = newInfoWindowToOpen;
 }
 
 /**
