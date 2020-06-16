@@ -109,6 +109,13 @@ public final class FindMeetingQuery {
             TimeRange.fromStartDuration(availableTimeRangeStart, availableDuration)
         );
       }
+
+      // Find the potential, next block of available time sandwiched between an ending and a
+      // starting {@code TimeRange}.
+      // (We can safely increment both pointers without missing any available time, because
+      //  we had the guarantee that no other existing {@code TimeRange} can be found between
+      //  the current ending and starting {@code TimeRange}.)
+      startOrderedPointer++;
       endOrderedPointer++;
     }
 
