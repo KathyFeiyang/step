@@ -36,8 +36,8 @@ public final class FindMeetingQuery {
   * First extracts the existing {@code TimeRange} that correspond to {@code Event} having
   * overlapping attendees with the {@code request}; we only need to avoid conflicting with
   * those {@code TimeRange} that involve attendees contained in the {@code request}.
-  * Then finds the available {@code TimeRange} sandwiched between an existing, ending
-  * {@code TimeRange} and an existing starting {@code TimeRange}.
+  * Then finds the available {@code TimeRange} sandwiched between an existing, occupied
+  * {@code TimeRange} and the next {@code TimeRange}.
   *
   * @param events Existing events that each occupy some {@code TimeRange}.
   * @param request A meeting request for some mandatory and optional attendees and a duration.
@@ -54,15 +54,15 @@ public final class FindMeetingQuery {
     }
 
     Collection<TimeRange> occupiedTimeRanges =
-        getRelevantTimeRangesFromEvents(events, attendees);
+        getConcernedAttendeesTimeRangesFromEvents(events, attendees);
 
     return getAvailabeTimeRanges(occupiedTimeRanges, requestedDuration);
   }
 
   /**
   * Finds the available {@code TimeRange} having at least a length of {@code requestedDuration},
-  * given some already occupied {@code TimeRange}. The resultant list of available
-  * {@code TimeRange} is sorted in ascending chronological order.
+  * given some already occupied {@code TimeRange}.
+  * The resultant list of available {@code TimeRange} is sorted in ascending chronological order.
   */
   private List<TimeRange> getAvailabeTimeRanges(Collection<TimeRange> occupiedTimeRanges,
       long requestedDuration) {
@@ -76,21 +76,20 @@ public final class FindMeetingQuery {
     List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                 TimeRange.ORDER_BY_END);
 
-    // Potentially add the {@code TimeRange} before the first existing {@code TimeRange}.
+    // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
     TimeRange firstStartingTimeRange = startOrderedTimeRanges.get(0);
     checkDurationAndAddAvailableTimeRange(requestedDuration,
                                           TimeRange.START_OF_DAY, firstStartingTimeRange.start(),
                                           availableTimeRanges);
 
-    // Find available {@code TimeRange} by looking at the available time between one ending
-    // {@code TimeRange} and the immediately following starting {@code TimeRange}.
+    // Find available {@code TimeRange} by looking at the available time between the end of one
+    // occupied {@code TimeRange} and the start of the next occupied {@code TimeRange}:
+    //   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
     ListIterator<TimeRange> startOrderedTimeRangesIterator = startOrderedTimeRanges.listIterator();
     ListIterator<TimeRange> endOrderedTimeRangesIterator = endOrderedTimeRanges.listIterator();
     TimeRange endingTimeRange = endOrderedTimeRangesIterator.next();
     TimeRange startingTimeRange = startOrderedTimeRangesIterator.next();
     while (true) {
-      // There is no available time after the current ending {@code TimeRange} and before the
-      // immediately following starting {@code TimeRange}.
       if (endingTimeRange.overlaps(startingTimeRange)) {
         if (startOrderedTimeRangesIterator.hasNext()) {
           startingTimeRange = startOrderedTimeRangesIterator.next();
@@ -99,11 +98,10 @@ public final class FindMeetingQuery {
         }
         continue;
       }
-      // There is another {@code TimeRange} that ends later than the current ending
-      // {@code TimeRange} + before the immediately following, starting {@code TimeRange}.
-      // (Since there exists a {@code TimeRange} starting later than the current ending
-      //  {@code TimeRange}, there must be other {@code TimeRange} ending even later. Therefore,
-      //  the {@code endOrderedPointer} is guaranteed to not go out of range.)
+      // There is another occupied {@code TimeRange} between the current ending {@code TimeRange}
+      // and the next occupied {@code TimeRange}.
+      // (Since there exists a {@code TimeRange} that occurs later than the current ending
+      //  {@code TimeRange}, we can be certain that invoking .next() won't go out of range.)
       TimeRange nextEndingTimeRange = endOrderedTimeRangesIterator.next();
       if (nextEndingTimeRange.end() <= startingTimeRange.start()) {
         endingTimeRange = nextEndingTimeRange;
@@ -120,11 +118,6 @@ public final class FindMeetingQuery {
                                             availableTimeRangeStart, availableTimeRangeEnd,
                                             availableTimeRanges);
 
-      // Find the potential, next block of available time sandwiched between an ending and a
-      // starting {@code TimeRange}.
-      // (We can safely increment both pointers without missing any available time, because
-      //  we had the guarantee that no other existing {@code TimeRange} can be found between
-      //  the current ending and starting {@code TimeRange}.)
       if (startOrderedTimeRangesIterator.hasNext() && endOrderedTimeRangesIterator.hasNext()) {
         startingTimeRange = startOrderedTimeRangesIterator.next();
         endingTimeRange = endOrderedTimeRangesIterator.next();
@@ -133,7 +126,7 @@ public final class FindMeetingQuery {
       }
     }
 
-    // Potentially add the {@code TimeRange} after the last existing {@code TimeRange}.
+    // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
     TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
     checkDurationAndAddAvailableTimeRange(requestedDuration,
                                           lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
@@ -146,7 +139,8 @@ public final class FindMeetingQuery {
   * Finds the existing {@code TimeRange} that correspond to {@code Event} having
   * overlapping attendees with a set of attendees that we are concerned with.
   */
-  private Collection<TimeRange> getRelevantTimeRangesFromEvents(Collection<Event> events,
+  private Collection<TimeRange> getConcernedAttendeesTimeRangesFromEvents(
+      Collection<Event> events,
       Set<String> attendees) {
     Collection<TimeRange> relevantTimeRanges = new HashSet<>();
     for (Event event : events) {
