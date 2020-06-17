@@ -14,13 +14,13 @@
 
 package com.google.sps;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Set;
 
 public final class FindMeetingQuery {
@@ -31,7 +31,7 @@ public final class FindMeetingQuery {
   * The resultant {@code TimeRange} do not overlap with one another and cover all possible
   * gaps between the existing {@code events}. These {@code TimeRange} have the same length as
   * or are longer than the requested meeting duration.
-  * First filters the existing {@code TimeRange} that correspond to {@code Event} having
+  * First extracts the existing {@code TimeRange} that correspond to {@code Event} having
   * overlapping attendees with the {@code request}; we only need to avoid conflicting with
   * those {@code TimeRange} that involve attendees contained in the {@code request}.
   * Then finds the available {@code TimeRange} sandwiched between an existing, ending
@@ -42,7 +42,7 @@ public final class FindMeetingQuery {
   * @return All available {@code TimeRange} that satisfy the meeting request.
   */
   public Collection<TimeRange> query(Collection<Event> events, MeetingRequest request) {
-    Collection<TimeRange> availableTimeRanges = new ArrayList<>();
+    Collection<TimeRange> availableTimeRanges = new LinkedList<>();
     Set<String> attendees = new HashSet<>(request.getAttendees());
     long requestedDuration = request.getDuration();
 
@@ -52,14 +52,26 @@ public final class FindMeetingQuery {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    Collection<TimeRange> relevantTimeRanges = getRelevantTimeRangesFromEvents(events, attendees);
-    if (relevantTimeRanges.isEmpty()) {
+    Collection<TimeRange> occupiedTimeRanges = getRelevantTimeRangesFromEvents(events, attendees);
+    if (occupiedTimeRanges.isEmpty()) {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
+    
+    availableTimeRanges = getAvailabeTimeRanges(occupiedTimeRanges, requestedDuration);
+    return availableTimeRanges;
+  }
 
-    List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(relevantTimeRanges,
+  /**
+  * Finds the available {@code TimeRange} having at least a length of {@code requestedDuration},
+  * given some already occupied {@code TimeRange}.
+  */
+  private Collection<TimeRange> getAvailabeTimeRanges(Collection<TimeRange> occupiedTimeRanges,
+      long requestedDuration) {
+    Collection<TimeRange> availableTimeRanges = new LinkedList<>();
+
+    List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                   TimeRange.ORDER_BY_START);
-    List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(relevantTimeRanges,
+    List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                 TimeRange.ORDER_BY_END);
 
     // Potentially add the {@code TimeRange} before the first existing {@code TimeRange}.
@@ -142,7 +154,7 @@ public final class FindMeetingQuery {
   */
   private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
       Comparator<TimeRange> sortOrder) {
-    List<TimeRange> orderedTimeRanges = new ArrayList<>(timeRanges);
+    List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
     Collections.sort(orderedTimeRanges, sortOrder);
     return orderedTimeRanges;
   }
