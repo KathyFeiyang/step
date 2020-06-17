@@ -14,13 +14,15 @@
 
 package com.google.sps;
 
+import java.lang.Math;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 public final class FindMeetingQuery {
@@ -42,7 +44,6 @@ public final class FindMeetingQuery {
   * @return All available {@code TimeRange} that satisfy the meeting request.
   */
   public Collection<TimeRange> query(Collection<Event> events, MeetingRequest request) {
-    Collection<TimeRange> availableTimeRanges = new LinkedList<>();
     Set<String> attendees = new HashSet<>(request.getAttendees());
     long requestedDuration = request.getDuration();
 
@@ -52,23 +53,24 @@ public final class FindMeetingQuery {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    Collection<TimeRange> occupiedTimeRanges = getRelevantTimeRangesFromEvents(events, attendees);
-    if (occupiedTimeRanges.isEmpty()) {
-      return Arrays.asList(TimeRange.WHOLE_DAY);
-    }
-    
-    availableTimeRanges = getAvailabeTimeRanges(occupiedTimeRanges, requestedDuration);
-    return availableTimeRanges;
+    Collection<TimeRange> occupiedTimeRanges =
+        getRelevantTimeRangesFromEvents(events, attendees);
+
+    return getAvailabeTimeRanges(occupiedTimeRanges, requestedDuration);
   }
 
   /**
   * Finds the available {@code TimeRange} having at least a length of {@code requestedDuration},
-  * given some already occupied {@code TimeRange}.
+  * given some already occupied {@code TimeRange}. The resultant list of available
+  * {@code TimeRange} is sorted in ascending chronological order.
   */
-  private Collection<TimeRange> getAvailabeTimeRanges(Collection<TimeRange> occupiedTimeRanges,
+  private List<TimeRange> getAvailabeTimeRanges(Collection<TimeRange> occupiedTimeRanges,
       long requestedDuration) {
-    Collection<TimeRange> availableTimeRanges = new LinkedList<>();
+    if (occupiedTimeRanges.isEmpty()) {
+      return Arrays.asList(TimeRange.WHOLE_DAY);
+    }
 
+    List<TimeRange> availableTimeRanges = new LinkedList<>();
     List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                   TimeRange.ORDER_BY_START);
     List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
@@ -82,17 +84,19 @@ public final class FindMeetingQuery {
 
     // Find available {@code TimeRange} by looking at the available time between one ending
     // {@code TimeRange} and the immediately following starting {@code TimeRange}.
-    int startOrderedPointer = 0;
-    int endOrderedPointer = 0;
-    while (startOrderedPointer < startOrderedTimeRanges.size() &&
-        endOrderedPointer < endOrderedTimeRanges.size()) {
-      TimeRange endingTimeRange = endOrderedTimeRanges.get(endOrderedPointer);
-      TimeRange startingTimeRange = startOrderedTimeRanges.get(startOrderedPointer);
-
+    ListIterator<TimeRange> startOrderedTimeRangesIterator = startOrderedTimeRanges.listIterator();
+    ListIterator<TimeRange> endOrderedTimeRangesIterator = endOrderedTimeRanges.listIterator();
+    TimeRange endingTimeRange = endOrderedTimeRangesIterator.next();
+    TimeRange startingTimeRange = startOrderedTimeRangesIterator.next();
+    while (true) {
       // There is no available time after the current ending {@code TimeRange} and before the
       // immediately following starting {@code TimeRange}.
       if (endingTimeRange.overlaps(startingTimeRange)) {
-        startOrderedPointer++;
+        if (startOrderedTimeRangesIterator.hasNext()) {
+          startingTimeRange = startOrderedTimeRangesIterator.next();
+        } else {
+          break;
+        }
         continue;
       }
       // There is another {@code TimeRange} that ends later than the current ending
@@ -100,10 +104,12 @@ public final class FindMeetingQuery {
       // (Since there exists a {@code TimeRange} starting later than the current ending
       //  {@code TimeRange}, there must be other {@code TimeRange} ending even later. Therefore,
       //  the {@code endOrderedPointer} is guaranteed to not go out of range.)
-      TimeRange nextEndingTimeRange = endOrderedTimeRanges.get(endOrderedPointer + 1);
+      TimeRange nextEndingTimeRange = endOrderedTimeRangesIterator.next();
       if (nextEndingTimeRange.end() <= startingTimeRange.start()) {
-        endOrderedPointer++;
+        endingTimeRange = nextEndingTimeRange;
         continue;
+      } else {
+        endOrderedTimeRangesIterator.previous();
       }
 
       // At this point, we have:
@@ -119,8 +125,12 @@ public final class FindMeetingQuery {
       // (We can safely increment both pointers without missing any available time, because
       //  we had the guarantee that no other existing {@code TimeRange} can be found between
       //  the current ending and starting {@code TimeRange}.)
-      startOrderedPointer++;
-      endOrderedPointer++;
+      if (startOrderedTimeRangesIterator.hasNext() && endOrderedTimeRangesIterator.hasNext()) {
+        startingTimeRange = startOrderedTimeRangesIterator.next();
+        endingTimeRange = endOrderedTimeRangesIterator.next();
+      } else {
+        break;
+      }
     }
 
     // Potentially add the {@code TimeRange} after the last existing {@code TimeRange}.
