@@ -28,27 +28,27 @@ import java.util.Set;
 public final class FindMeetingQuery {
 
   /**
-  * Finds the available {@code TimeRange} for a set of mandatory and optional attendees to
-  * satisfy a meeting {@code request}, given some existing {@code events} and their respective
-  * attendees. If we can find {@code TimeRange} for both mandatory and optional attendees, we
-  * return only those {@code TimeRange}; if not, we return all {@code TimeRange} that satisfy
-  * the mandatory attendees. In the special case where there are no mandatory attendees, we
-  * find the {@code TimeRange} that satisfy all optional attendees.
-  * The resultant {@code TimeRange} do not overlap with one another and cover all possible
-  * gaps between the existing {@code events}. These {@code TimeRange} have the same length as
-  * or are longer than the requested meeting duration.
-  * -- First extracts the existing {@code TimeRange} that correspond to {@code Event} having
-  * overlapping attendees with the {@code request}; we only need to avoid conflicting with
-  * those {@code TimeRange} that involve attendees contained in the {@code request}.
-  * -- Then finds the available {@code TimeRange} sandwiched between an existing, ending
-  * {@code TimeRange} and an existing starting {@code TimeRange}.
-  * -- Finally finds the overlapping, available {@code TimeRange} shared by mandatory and
-  * optional attendees.
-  *
-  * @param events Existing events that each occupy some {@code TimeRange}.
-  * @param request A meeting request for some mandatory and optional attendees and a duration.
-  * @return All available {@code TimeRange} that satisfy the meeting request.
-  */
+   * Finds the available {@code TimeRange} for a set of mandatory and optional attendees to
+   * satisfy a meeting {@code request}, given some existing {@code events} and their respective
+   * attendees. If we can find available {@code TimeRange} for both mandatory and optional
+   * attendees, we return only those {@code TimeRange}; if not, we return all {@code TimeRange}
+   * that satisfy the mandatory attendees. In the special case where there are no mandatory
+   * attendees, we find the {@code TimeRange} that satisfy all optional attendees.
+   * The resultant {@code TimeRange} do not overlap with one another and cover all possible
+   * empty gaps in the existing {@code events}. These {@code TimeRange} have the same length as
+   * or are longer than the requested meeting duration.
+   * -- First extracts the existing {@code TimeRange} of those {@code Event} that include any
+   * attendees mentioned in the {@code request}; we only need to avoid conflicting with
+   * those {@code TimeRange} that involve attendees mentioned in the {@code request}.
+   * -- Then finds the available {@code TimeRange} sandwiched between two already-occupied
+   * {@code TimeRange}, for mandatory and optional attendees respectively.
+   * -- Finally finds the overlapping, available {@code TimeRange} shared by mandatory and
+   * optional attendees.
+   *
+   * @param events Existing events that each occupy some {@code TimeRange}.
+   * @param request A meeting request for some mandatory and optional attendees and a duration.
+   * @return All available {@code TimeRange} that satisfy the meeting request.
+   */
   public Collection<TimeRange> query(Collection<Event> events, MeetingRequest request) {
     Collection<String> attendees = request.getAttendees();
     Collection<String> optionalAttendees = request.getOptionalAttendees();
@@ -84,9 +84,8 @@ public final class FindMeetingQuery {
   }
 
   /**
-  * Finds the existing {@code TimeRange} that correspond to {@code Event} having
-  * overlapping attendees with a set of attendees that we are concerned with.
-  */
+   * Finds the {@code TimeRange} of {@code events} that include the given {@code attendees}.
+   */
   private Collection<TimeRange> getConcernedAttendeesTimeRangesFromEvents(
       Collection<Event> events,
       Collection<String> attendees) {
@@ -100,25 +99,25 @@ public final class FindMeetingQuery {
   }
 
   /**
-  * Finds the available {@code TimeRange} having at least a length of {@code requestedDuration},
-  * given some already occupied {@code TimeRange}.
-  *
-  * @param occupiedTimeRanges A collection of {@code TimeRange} that are considered occupied and
-  *   need to be avoided.
-  * @param requestedDuration The requested length of the available {@code TimeRange} to find.
-  * @return A list of all available {@code TimeRange} sorted in ascending chronological order.
-  */
+   * Finds the available {@code TimeRange} having at least a length of {@code requestedDuration},
+   * given some already occupied {@code TimeRange}.
+   *
+   * @param occupiedTimeRanges A collection of {@code TimeRange} that are considered occupied and
+   *   need to be avoided.
+   * @param requestedDuration The requested length of the available {@code TimeRange} to find.
+   * @return A list of all available {@code TimeRange} sorted in ascending chronological order.
+   */
   private List<TimeRange> getAvailabeTimeRanges(Collection<TimeRange> occupiedTimeRanges,
       long requestedDuration) {
     if (occupiedTimeRanges.isEmpty()) {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    List<TimeRange> availableTimeRanges = new LinkedList<>();
     List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                   TimeRange.ORDER_BY_START);
     List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                 TimeRange.ORDER_BY_END);
+    List<TimeRange> availableTimeRanges = new LinkedList<>();
 
     // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
     TimeRange firstStartingTimeRange = startOrderedTimeRanges.get(0);
@@ -126,27 +125,60 @@ public final class FindMeetingQuery {
                                           TimeRange.START_OF_DAY, firstStartingTimeRange.start(),
                                           availableTimeRanges);
 
-    // Find available {@code TimeRange} by looking at the available time between the end of one
-    // occupied {@code TimeRange} and the start of the next occupied {@code TimeRange}:
-    //   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
+    findAndAddGapsInOccupiedTimeRanges(requestedDuration,
+                                       startOrderedTimeRanges, endOrderedTimeRanges,
+                                       availableTimeRanges);
+
+    // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
+    TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
+    checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                          lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
+                                          availableTimeRanges);
+
+    return availableTimeRanges;
+  }
+
+  /**
+   * Sorts {@code timeRanges} based on the specified {@code sortOrder}.
+   */
+  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
+      Comparator<TimeRange> sortOrder) {
+    List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
+    Collections.sort(orderedTimeRanges, sortOrder);
+    return orderedTimeRanges;
+  }
+
+  /**
+   * Find available {@code TimeRange} by looking at the available time between the end of one
+   * occupied {@code TimeRange} and the start of the next occupied {@code TimeRange}:
+   *   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
+   *
+   * @param requestedDuration The requested length of the available {@code TimeRange} to find.
+   * @param startOrderedTimeRanges A start-time ordered list of occupied {@TimeRange}.
+   * @param endOrderedTimeRanges An end-time ordered list of occupied {@TimeRange}.
+   * @param availableTimeRanges A list of available {@code TimeRange} that avoid the already
+   *     occupied {@code TimeRange}.
+   */
+  private void findAndAddGapsInOccupiedTimeRanges(long requestedDuration,
+      List<TimeRange> startOrderedTimeRanges,
+      List<TimeRange> endOrderedTimeRanges,
+      List<TimeRange> availableTimeRanges) {
     ListIterator<TimeRange> startOrderedTimeRangesIterator = startOrderedTimeRanges.listIterator();
     ListIterator<TimeRange> endOrderedTimeRangesIterator = endOrderedTimeRanges.listIterator();
     TimeRange endingTimeRange = endOrderedTimeRangesIterator.next();
     TimeRange startingTimeRange = startOrderedTimeRangesIterator.next();
 
-    findGapsInOccupiedTimeRanges:
     while (true) {
 
       while (endingTimeRange.overlaps(startingTimeRange)) {
         if (startOrderedTimeRangesIterator.hasNext()) {
           startingTimeRange = startOrderedTimeRangesIterator.next();
         } else {
-          break findGapsInOccupiedTimeRanges;
+          return;
         }
       }
 
-      // There is another occupied {@code TimeRange} between the current ending {@code TimeRange}
-      // and the next occupied {@code TimeRange}.
+      // Find the latest occupied {@code TimeRange} that occurs before the {@startingTimeRange}.
       // (Since there exists a {@code TimeRange} that occurs later than the current ending
       // {@code TimeRange}, we can be certain that invoking .next() won't go out of range.)
       TimeRange nextEndingTimeRange = endOrderedTimeRangesIterator.next();
@@ -172,42 +204,25 @@ public final class FindMeetingQuery {
         startingTimeRange = startOrderedTimeRangesIterator.next();
         endingTimeRange = endOrderedTimeRangesIterator.next();
       } else {
-        break findGapsInOccupiedTimeRanges;
+        return;
       }
     }
-
-    // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
-    TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
-    checkDurationAndAddAvailableTimeRange(requestedDuration,
-                                          lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
-                                          availableTimeRanges);
-
-    return availableTimeRanges;
   }
 
   /**
-  * Sorts {@code timeRanges} based on the specified {@code sortOrder}.
-  */
-  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
-      Comparator<TimeRange> sortOrder) {
-    List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
-    Collections.sort(orderedTimeRanges, sortOrder);
-    return orderedTimeRanges;
-  }
-
-  /**
-  * Finds the overlapping, available {@code TimeRange} of mandatory and optional attendees that
-  * have at least a length of the requested duration.
-  *
-  * @param requestedDuration The requested length of the overlapping, available {@code TimeRange}
-  *   to find.
-  * @param availableTimeRangesForMandatoryAttendees A list of available {@code TimeRange} for the
-  *   mandatory attendees. This list is expected to be sorted in ascending chronological order.
-  * @param availableTimeRangesForOptionalAttendees A list of available {@code TimeRange} for the
-  *   optional attendees. This list is expected to be sorted in ascending chronological order.
-  * @return A list of all available {@code TimeRange} for both mandatory and optional attendees,
-  *   sorted in ascending chronological order.
-  */
+   * Finds the overlapping, available {@code TimeRange} for mandatory and optional attendees. 
+   * If no {@code TimeRange} satisfies all mandatory and optional attendees, returns those
+   * {@code TimeRange} that satisfies mandatory attendees.
+   *
+   * @param requestedDuration The requested length of the overlapping, available {@code TimeRange}
+   *     to find.
+   * @param availableTimeRangesForMandatoryAttendees A list of available {@code TimeRange} for the
+   *     mandatory attendees. This list is expected to be sorted in ascending chronological order.
+   * @param availableTimeRangesForOptionalAttendees A list of available {@code TimeRange} for the
+   *     optional attendees. This list is expected to be sorted in ascending chronological order.
+   * @return A list of all available {@code TimeRange} for both mandatory and optional attendees,
+   *     sorted in ascending chronological order.
+   */
   private List<TimeRange> getOverlappingAvailabeTimeRanges(long requestedDuration,
       List<TimeRange> availableTimeRangesForMandatoryAttendees,
       List<TimeRange> availableTimeRangesForOptionalAttendees) {
@@ -218,6 +233,22 @@ public final class FindMeetingQuery {
     }
 
     List<TimeRange> availableTimeRangesForMandatoryOptionalAttendees = new LinkedList<>();
+    findAndAddOverlappingAvailableTimeRanges(requestedDuration,
+                                             availableTimeRangesForMandatoryAttendees,
+                                             availableTimeRangesForOptionalAttendees,
+                                             availableTimeRangesForMandatoryOptionalAttendees);
+
+    return availableTimeRangesForMandatoryOptionalAttendees;
+  }
+
+  /**
+   * Finds and adds the overlapping {@code TimeRange} for mandatory and optional attendees. These
+   * {@code TimeRange} have at least a length of the requested duration.
+   */
+  private void findAndAddOverlappingAvailableTimeRanges(long requestedDuration,
+      List<TimeRange> availableTimeRangesForMandatoryAttendees,
+      List<TimeRange> availableTimeRangesForOptionalAttendees,
+      List<TimeRange> availableTimeRangesForMandatoryOptionalAttendees) {
     ListIterator<TimeRange> mandatoryAttendeesIterator =
         availableTimeRangesForMandatoryAttendees.listIterator();
     ListIterator<TimeRange> optionalAttendeesIterator =
@@ -225,7 +256,6 @@ public final class FindMeetingQuery {
     TimeRange mandatoryAttendeesTimeRange = mandatoryAttendeesIterator.next();
     TimeRange optionalAttendeesTimeRange = optionalAttendeesIterator.next();
 
-    findOverlappingAvailableTimeRanges:
     while (true) {
 
       while (!mandatoryAttendeesTimeRange.overlaps(optionalAttendeesTimeRange)) {
@@ -233,13 +263,13 @@ public final class FindMeetingQuery {
           if (mandatoryAttendeesIterator.hasNext()) {
             mandatoryAttendeesTimeRange = mandatoryAttendeesIterator.next();
           } else {
-            break findOverlappingAvailableTimeRanges;
+            return;
           }
         } else {
           if (optionalAttendeesIterator.hasNext()) {
             optionalAttendeesTimeRange = optionalAttendeesIterator.next();
           } else {
-            break findOverlappingAvailableTimeRanges;
+            return;
           }
         }
       }
@@ -252,7 +282,7 @@ public final class FindMeetingQuery {
         if (mandatoryAttendeesIterator.hasNext()) {
           mandatoryAttendeesTimeRange = mandatoryAttendeesIterator.next();
         } else {
-          break findOverlappingAvailableTimeRanges;
+          return;
         }
       }
       while (mandatoryAttendeesTimeRange.contains(optionalAttendeesTimeRange)) {
@@ -260,17 +290,17 @@ public final class FindMeetingQuery {
         if (optionalAttendeesIterator.hasNext()) {
           optionalAttendeesTimeRange = optionalAttendeesIterator.next();
         } else {
-          break findOverlappingAvailableTimeRanges;
+          return;
         }
       }
 
       // At this point, we have two potential scenarios:
       // 1. |----mandatory attendees {@code TimeRange}----|
       //                       |----optional attendees {@code TimeRange}-----|
-      //                       |--------------------------|
+      //   Overlap:            |--------------------------|
       // 2. |----optional attendees {@code TimeRange}-----|
       //                       |----mandatory attendees {@code TimeRange}----|
-      //                       |--------------------------|
+      //   Overlap:            |--------------------------|
       int overlappingTimeRangeStart = Math.max(mandatoryAttendeesTimeRange.start(),
                                                optionalAttendeesTimeRange.start());
       int overlappingTimeRangeEnd = Math.min(mandatoryAttendeesTimeRange.end(),
@@ -283,25 +313,23 @@ public final class FindMeetingQuery {
         if (mandatoryAttendeesIterator.hasNext()) {
           mandatoryAttendeesTimeRange = mandatoryAttendeesIterator.next();
         } else {
-          break findOverlappingAvailableTimeRanges;
+          return;
         }
       } else {
         // Scenario 2: move on to the next optional attendees' available {@code TimeRange}.
         if (optionalAttendeesIterator.hasNext()) {
           optionalAttendeesTimeRange = optionalAttendeesIterator.next();
         } else {
-          break findOverlappingAvailableTimeRanges;
+          return;
         }
       }
     }
-
-    return availableTimeRangesForMandatoryOptionalAttendees;
   }
 
   /**
-  * If a [start, end) represented {@code TimeRange} has a sufficient duration, adds it to the
-  * set of available {@code TimeRange}.
-  */
+   * If a [start, end) represented {@code TimeRange} has a sufficient duration, adds it to the
+   * set of available {@code TimeRange}.
+   */
   private void checkDurationAndAddAvailableTimeRange(long requestedDuration, int start, int end,
       Collection<TimeRange> availableTimeRanges) {
     if (requestedDuration <= end - start) {
