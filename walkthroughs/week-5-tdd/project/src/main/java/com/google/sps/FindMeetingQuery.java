@@ -60,8 +60,7 @@ public final class FindMeetingQuery {
   }
 
   /**
-  * Finds the existing {@code TimeRange} that correspond to {@code Event} having
-  * overlapping attendees with a set of attendees that we are concerned with.
+  * Finds the {@code TimeRange} of {@code events} that include the given {@code attendees}.
   */
   private Collection<TimeRange> getConcernedAttendeesTimeRangesFromEvents(
       Collection<Event> events,
@@ -86,11 +85,11 @@ public final class FindMeetingQuery {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    List<TimeRange> availableTimeRanges = new LinkedList<>();
     List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                   TimeRange.ORDER_BY_START);
     List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
                                                                 TimeRange.ORDER_BY_END);
+    List<TimeRange> availableTimeRanges = new LinkedList<>();
 
     // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
     TimeRange firstStartingTimeRange = startOrderedTimeRanges.get(0);
@@ -98,27 +97,61 @@ public final class FindMeetingQuery {
                                           TimeRange.START_OF_DAY, firstStartingTimeRange.start(),
                                           availableTimeRanges);
 
-    // Find available {@code TimeRange} by looking at the available time between the end of one
-    // occupied {@code TimeRange} and the start of the next occupied {@code TimeRange}:
-    //   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
+    findAndAddGapsInOccupiedTimeRanges(requestedDuration,
+                                       startOrderedTimeRanges, endOrderedTimeRanges,
+                                       availableTimeRanges);
+
+    // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
+    TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
+    checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                          lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
+                                          availableTimeRanges);
+
+    return availableTimeRanges;
+  }
+
+  /**
+  * Sorts {@code timeRanges} based on the specified {@code sortOrder}.
+  */
+  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
+      Comparator<TimeRange> sortOrder) {
+    List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
+    Collections.sort(orderedTimeRanges, sortOrder);
+    return orderedTimeRanges;
+  }
+
+  /**
+  * Find available {@code TimeRange} by looking at the available time between the end of one
+  * occupied {@code TimeRange} and the start of the next occupied {@code TimeRange}:
+  *   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
+  *
+  * @param requestedDuration The requested length of the overlapping, available {@code TimeRange}
+  *   to find.
+  * @param startOrderedTimeRanges A start-time ordered list of occupied {@TimeRange}.
+  * @param endOrderedTimeRanges An end-time ordered list of occupied {@TimeRange}.
+  * @param availableTimeRanges A list of available {@code TimeRange} that avoid the already
+  *   occupied {@code TimeRange}.
+  */
+  private void findAndAddGapsInOccupiedTimeRanges(long requestedDuration,
+      List<TimeRange> startOrderedTimeRanges,
+      List<TimeRange> endOrderedTimeRanges,
+      Collection<TimeRange> availableTimeRanges) {
     ListIterator<TimeRange> startOrderedTimeRangesIterator = startOrderedTimeRanges.listIterator();
     ListIterator<TimeRange> endOrderedTimeRangesIterator = endOrderedTimeRanges.listIterator();
     TimeRange endingTimeRange = endOrderedTimeRangesIterator.next();
     TimeRange startingTimeRange = startOrderedTimeRangesIterator.next();
 
-    findGapsInOccupiedTimeRanges:
     while (true) {
 
       while (endingTimeRange.overlaps(startingTimeRange)) {
         if (startOrderedTimeRangesIterator.hasNext()) {
           startingTimeRange = startOrderedTimeRangesIterator.next();
         } else {
-          break findGapsInOccupiedTimeRanges;
+          return;
         }
       }
 
-      // There is another occupied {@code TimeRange} between the current ending {@code TimeRange}
-      // and the next occupied {@code TimeRange}.
+      // Find the latest occupied {@code TimeRange} that occurs before the {@startingTimeRange}.
       // (Since there exists a {@code TimeRange} that occurs later than the current ending
       // {@code TimeRange}, we can be certain that invoking .next() won't go out of range.)
       TimeRange nextEndingTimeRange = endOrderedTimeRangesIterator.next();
@@ -144,27 +177,9 @@ public final class FindMeetingQuery {
         startingTimeRange = startOrderedTimeRangesIterator.next();
         endingTimeRange = endOrderedTimeRangesIterator.next();
       } else {
-        break findGapsInOccupiedTimeRanges;
+        return;
       }
     }
-
-    // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
-    TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
-    checkDurationAndAddAvailableTimeRange(requestedDuration,
-                                          lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
-                                          availableTimeRanges);
-
-    return availableTimeRanges;
-  }
-
-  /**
-  * Sorts {@code timeRanges} based on the specified {@code sortOrder}.
-  */
-  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
-      Comparator<TimeRange> sortOrder) {
-    List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
-    Collections.sort(orderedTimeRanges, sortOrder);
-    return orderedTimeRanges;
   }
 
   /**
