@@ -139,45 +139,43 @@ public final class FindMeetingQuery {
       Collection<TimeRange> availableTimeRanges) {
     int startOrderedPointer = 0;
     int endOrderedPointer = 0;
-    TimeRange endingTimeRange = endOrderedTimeRanges[endOrderedPointer];
-    TimeRange startingTimeRange = startOrderedTimeRanges[startOrderedPointer];
 
     while (true) {
 
-      while (endingTimeRange.overlaps(startingTimeRange)) {
+      while (endOrderedTimeRanges[endOrderedPointer]
+          .overlaps(startOrderedTimeRanges[startOrderedPointer])) {
         if (startOrderedPointer + 1 < startOrderedTimeRanges.length) {
-          startingTimeRange = startOrderedTimeRanges[++startOrderedPointer];
+          startOrderedPointer++;
         } else {
           return;
         }
       }
 
-      // Find the latest occupied {@code TimeRange} that occurs before the {@startingTimeRange}.
+      // Find the latest occupied {@code TimeRange} that occurs before the starting
+      // {@code TimeRange}.
       // (Since there exists a {@code TimeRange} that occurs later than the current ending
-      // {@code TimeRange}, we can be certain that invoking .next() won't go out of range.)
-      TimeRange nextEndingTimeRange = endOrderedTimeRanges[endOrderedPointer + 1];
-      while (nextEndingTimeRange.end() <= startingTimeRange.start()) {
-        endingTimeRange = nextEndingTimeRange;
+      // {@code TimeRange}, we can be certain that {@code endOrderedPointer + 1} won't go out
+      // of range.
+      while (endOrderedTimeRanges[endOrderedPointer + 1].end() <=
+          startOrderedTimeRanges[startOrderedPointer].start()) {
         endOrderedPointer++;
-        if (endOrderedPointer + 1 < endOrderedTimeRanges.length) {
-          nextEndingTimeRange = endOrderedTimeRanges[endOrderedPointer + 1];
-        } else {
+        if (!(endOrderedPointer + 1 < endOrderedTimeRanges.length)) {
           break;
         }
       }
 
       // At this point, we have:
       //    |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
-      int availableTimeRangeStart = endingTimeRange.end();
-      int availableTimeRangeEnd = startingTimeRange.start();
+      int availableTimeRangeStart = endOrderedTimeRanges[endOrderedPointer].end();
+      int availableTimeRangeEnd = startOrderedTimeRanges[startOrderedPointer].start();
       checkDurationAndAddAvailableTimeRange(requestedDuration,
                                             availableTimeRangeStart, availableTimeRangeEnd,
                                             availableTimeRanges);
 
       if (startOrderedPointer + 1 < startOrderedTimeRanges.length &&
           endOrderedPointer + 1 < endOrderedTimeRanges.length) {
-        startingTimeRange = startOrderedTimeRanges[++startOrderedPointer];
-        endingTimeRange = endOrderedTimeRanges[++endOrderedPointer];
+        startOrderedPointer++;
+        endOrderedPointer++;
       } else {
         return;
       }
