@@ -38,7 +38,7 @@ public final class FindMeetingQuery {
    * empty gaps in the existing {@code events}. These {@code TimeRange} have the same length as
    * or are longer than the requested meeting duration.
    * -- First extracts the existing {@code TimeRange} of those {@code Event} that include any
-   * attendees mentioned in the {@code request}; we only need to avoid conflicting with
+   * attendees mentioned in the {@code request}. We only need to avoid conflicting with
    * those {@code TimeRange} that involve attendees mentioned in the {@code request}.
    * -- Then finds the available {@code TimeRange} sandwiched between two already-occupied
    * {@code TimeRange}, for mandatory and optional attendees respectively.
@@ -64,7 +64,6 @@ public final class FindMeetingQuery {
         getConcernedAttendeesTimeRangesFromEvents(events, attendees);
     Collection<TimeRange> optionalOccupiedTimeRanges =
         getConcernedAttendeesTimeRangesFromEvents(events, optionalAttendees);
-
     List<TimeRange> availableTimeRangesForMandatoryAttendees =
         getAvailabeTimeRanges(occupiedTimeRanges, requestedDuration);
     List<TimeRange> availableTimeRangesForOptionalAttendees =
@@ -72,7 +71,6 @@ public final class FindMeetingQuery {
     if (attendees.isEmpty()) {
       return availableTimeRangesForOptionalAttendees;
     }
-
     List<TimeRange> availableTimeRangesForMandatoryOptionalAttendees =
         getOverlappingAvailabeTimeRanges(requestedDuration,
                                          availableTimeRangesForMandatoryAttendees,
@@ -113,39 +111,36 @@ public final class FindMeetingQuery {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    List<TimeRange> startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
-                                                                  TimeRange.ORDER_BY_START);
-    List<TimeRange> endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
-                                                                TimeRange.ORDER_BY_END);
+    TimeRange[] startOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
+                                                              TimeRange.ORDER_BY_START);
+    TimeRange[] endOrderedTimeRanges = getOrderedTimeRanges(occupiedTimeRanges,
+                                                            TimeRange.ORDER_BY_END);
     List<TimeRange> availableTimeRanges = new LinkedList<>();
 
     // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
-    TimeRange firstStartingTimeRange = startOrderedTimeRanges.get(0);
+    TimeRange firstStartingTimeRange = startOrderedTimeRanges[0];
     checkDurationAndAddAvailableTimeRange(requestedDuration,
                                           TimeRange.START_OF_DAY, firstStartingTimeRange.start(),
                                           availableTimeRanges);
-
     findAndAddGapsInOccupiedTimeRanges(requestedDuration,
                                        startOrderedTimeRanges, endOrderedTimeRanges,
                                        availableTimeRanges);
-
     // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
-    TimeRange lastEndingTimeRange = endOrderedTimeRanges.get(endOrderedTimeRanges.size() - 1);
+    TimeRange lastEndingTimeRange = endOrderedTimeRanges[endOrderedTimeRanges.length - 1];
     checkDurationAndAddAvailableTimeRange(requestedDuration,
                                           lastEndingTimeRange.end(), TimeRange.END_OF_DAY + 1,
                                           availableTimeRanges);
-
     return availableTimeRanges;
   }
 
   /**
    * Sorts {@code timeRanges} based on the specified {@code sortOrder}.
    */
-  private List<TimeRange> getOrderedTimeRanges(Collection<TimeRange> timeRanges,
+  private TimeRange[] getOrderedTimeRanges(Collection<TimeRange> timeRanges,
       Comparator<TimeRange> sortOrder) {
     List<TimeRange> orderedTimeRanges = new LinkedList<>(timeRanges);
     Collections.sort(orderedTimeRanges, sortOrder);
-    return orderedTimeRanges;
+    return orderedTimeRanges.toArray(new TimeRange[0]);
   }
 
   /**
@@ -154,55 +149,56 @@ public final class FindMeetingQuery {
    *   |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
    *
    * @param requestedDuration The requested length of the available {@code TimeRange} to find.
-   * @param startOrderedTimeRanges A start-time ordered list of occupied {@TimeRange}.
-   * @param endOrderedTimeRanges An end-time ordered list of occupied {@TimeRange}.
+   * @param startOrderedTimeRanges A start-time ordered list of occupied {@TimeRange}. This list
+   *     is expected to be non-empty.
+   * @param endOrderedTimeRanges An end-time ordered list of occupied {@TimeRange}. This list is
+   *     expected to be non-empty.
    * @param availableTimeRanges A list of available {@code TimeRange} that avoid the already
    *     occupied {@code TimeRange}.
    */
   private void findAndAddGapsInOccupiedTimeRanges(long requestedDuration,
-      List<TimeRange> startOrderedTimeRanges,
-      List<TimeRange> endOrderedTimeRanges,
-      List<TimeRange> availableTimeRanges) {
-    ListIterator<TimeRange> startOrderedTimeRangesIterator = startOrderedTimeRanges.listIterator();
-    ListIterator<TimeRange> endOrderedTimeRangesIterator = endOrderedTimeRanges.listIterator();
-    TimeRange endingTimeRange = endOrderedTimeRangesIterator.next();
-    TimeRange startingTimeRange = startOrderedTimeRangesIterator.next();
+      TimeRange[] startOrderedTimeRanges,
+      TimeRange[] endOrderedTimeRanges,
+      Collection<TimeRange> availableTimeRanges) {
+    int startOrderedPointer = 0;
+    int endOrderedPointer = 0;
 
     while (true) {
 
-      while (endingTimeRange.overlaps(startingTimeRange)) {
-        if (startOrderedTimeRangesIterator.hasNext()) {
-          startingTimeRange = startOrderedTimeRangesIterator.next();
+      while (endOrderedTimeRanges[endOrderedPointer]
+          .overlaps(startOrderedTimeRanges[startOrderedPointer])) {
+        if (startOrderedPointer + 1 < startOrderedTimeRanges.length) {
+          startOrderedPointer++;
         } else {
           return;
         }
       }
 
-      // Find the latest occupied {@code TimeRange} that occurs before the {@startingTimeRange}.
+      // Find the latest occupied {@code TimeRange} that occurs before the starting
+      // {@code TimeRange}.
       // (Since there exists a {@code TimeRange} that occurs later than the current ending
-      // {@code TimeRange}, we can be certain that invoking .next() won't go out of range.)
-      TimeRange nextEndingTimeRange = endOrderedTimeRangesIterator.next();
-      while (nextEndingTimeRange.end() <= startingTimeRange.start()) {
-        endingTimeRange = nextEndingTimeRange;
-        if (endOrderedTimeRangesIterator.hasNext()) {
-          nextEndingTimeRange = endOrderedTimeRangesIterator.next();
-        } else {
+      // {@code TimeRange}, we can be certain that {@code endOrderedPointer + 1} won't go out
+      // of range.
+      while (endOrderedTimeRanges[endOrderedPointer + 1].end() <=
+          startOrderedTimeRanges[startOrderedPointer].start()) {
+        endOrderedPointer++;
+        if (!(endOrderedPointer + 1 < endOrderedTimeRanges.length)) {
           break;
         }
       }
-      endOrderedTimeRangesIterator.previous();
 
       // At this point, we have:
       //    |----ending {@code TimeRange}----| available time |----starting {@code TimeRange}----|
-      int availableTimeRangeStart = endingTimeRange.end();
-      int availableTimeRangeEnd = startingTimeRange.start();
+      int availableTimeRangeStart = endOrderedTimeRanges[endOrderedPointer].end();
+      int availableTimeRangeEnd = startOrderedTimeRanges[startOrderedPointer].start();
       checkDurationAndAddAvailableTimeRange(requestedDuration,
                                             availableTimeRangeStart, availableTimeRangeEnd,
                                             availableTimeRanges);
 
-      if (startOrderedTimeRangesIterator.hasNext() && endOrderedTimeRangesIterator.hasNext()) {
-        startingTimeRange = startOrderedTimeRangesIterator.next();
-        endingTimeRange = endOrderedTimeRangesIterator.next();
+      if (startOrderedPointer + 1 < startOrderedTimeRanges.length &&
+          endOrderedPointer + 1 < endOrderedTimeRanges.length) {
+        startOrderedPointer++;
+        endOrderedPointer++;
       } else {
         return;
       }

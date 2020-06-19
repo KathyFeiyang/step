@@ -45,16 +45,12 @@ public class AuthenticationServlet extends HttpServlet {
       String logoutUrl = userService.createLogoutURL(urlToRedirectToAfterUserLogsOut);
       // Obtain the name to refer to the current user.
       String userName = this.getUserName(userService.getCurrentUser().getUserId());
-      if (!userName.isEmpty()) {
-        authenticationInfo = new AuthenticationInfo(true, logoutUrl, userName);
-      } else {
-        String userEmail = userService.getCurrentUser().getEmail();
-        authenticationInfo = new AuthenticationInfo(true, logoutUrl, userEmail);
-      }
+      String userEmail = userService.getCurrentUser().getEmail();
+      authenticationInfo = new AuthenticationInfo(true, logoutUrl, userName, userEmail);
     } else {
       String urlToRedirectToAfterUserLogsIn = DataServlet.REDIRECT_URL;
       String loginUrl = userService.createLoginURL(urlToRedirectToAfterUserLogsIn);
-      authenticationInfo = new AuthenticationInfo(false, loginUrl, "beautiful stranger");
+      authenticationInfo = new AuthenticationInfo(false, loginUrl, "beautiful stranger", "");
     }
     // Convert user authentication information into JSON.
     Gson gson = new Gson();
@@ -91,12 +87,14 @@ public class AuthenticationServlet extends HttpServlet {
     private boolean isUserLoggedIn;
     private String authenticationUrl;
     private String userReference;
+    private String userEmail;
 
     AuthenticationInfo(boolean inputIsUserLoggedIn, String inputAuthenticationUrl,
-        String inputUserReference) {
+        String inputUserReference, String inputUserEmail) {
       this.isUserLoggedIn = inputIsUserLoggedIn;
       this.authenticationUrl = inputAuthenticationUrl;
       this.userReference = inputUserReference;
+      this.userEmail = inputUserEmail;
     }
   }
 }
