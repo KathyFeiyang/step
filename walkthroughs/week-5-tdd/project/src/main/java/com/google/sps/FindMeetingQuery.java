@@ -73,15 +73,11 @@ public final class FindMeetingQuery {
     if (!attendees.isEmpty()) {
       Collection<TimeRange> occupiedTimeRanges =
           getConcernedAttendeesTimeRangesFromEvents(events, attendees);
-      List<TimeRange> availableTimeRangesForMandatoryAttendees =
-          getAvailableTimeRanges(occupiedTimeRanges, requestedDuration);
-      return availableTimeRangesForMandatoryAttendees;
+      return getAvailableTimeRanges(occupiedTimeRanges, requestedDuration);
     } else {
       Collection<TimeRange> optionalOccupiedTimeRanges =
           getConcernedAttendeesTimeRangesFromEvents(events, optionalAttendees);
-      List<TimeRange> availableTimeRangesForOptionalAttendees =
-          getAvailableTimeRanges(optionalOccupiedTimeRanges, requestedDuration);
-      return availableTimeRangesForOptionalAttendees;
+      return getAvailableTimeRanges(optionalOccupiedTimeRanges, requestedDuration);
     }
   }
 
