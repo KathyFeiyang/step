@@ -161,30 +161,22 @@ public final class FindMeetingQuery {
   private void findAndAddGapsInOccupiedTimeRanges(long requestedDuration,
       List<TimePoint> orderedTimePoints,
       Collection<TimeRange> availableTimeRanges) {
-    int index = 1;
-    int unendedTimeRange = 1;
-
-    while (index < orderedTimePoints.size()) {
+    int unendedTimeRange = 0;
+    for (int index = 0; index < orderedTimePoints.size(); index++) {
       // Construct a continuously occupied range of time, which needs to be skipped. Such
       // continuously occupied range of time would contain an equal number of start and end
       // {@code TimePoint}. This occupied range may look like (TR stands for {@code TimeRange}):
       //    [start of TR1, start of TR2, end of TR1, start of TR3, end of TR3, end of TR2]
       // Available time occurs after the continuously occupied ranges of time.
-      if (unendedTimeRange > 0) {
-        if (orderedTimePoints.get(index).isTimeRangeStart()) {
-          unendedTimeRange++;
-        } else {
-          unendedTimeRange--;
-        }
-      } else {
-        int availableTimeRangeStart = orderedTimePoints.get(index - 1).getTime();
-        int availableTimeRangeEnd = orderedTimePoints.get(index).getTime();
+      int _ = orderedTimePoints.get(index).isTimeRangeStart() ?
+          unendedTimeRange++ : unendedTimeRange--;
+      if (unendedTimeRange == 0 && index + 1 < orderedTimePoints.size()) {
+        int availableTimeRangeStart = orderedTimePoints.get(index).getTime();
+        int availableTimeRangeEnd = orderedTimePoints.get(index + 1).getTime();
         checkDurationAndAddAvailableTimeRange(requestedDuration,
                                               availableTimeRangeStart, availableTimeRangeEnd,
                                               availableTimeRanges);
-        unendedTimeRange = 1;
       }
-      index++;
     }
   }
 
