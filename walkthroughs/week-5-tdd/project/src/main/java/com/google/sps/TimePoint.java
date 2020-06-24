@@ -40,7 +40,7 @@ public class TimePoint {
   /**
     * Returns the time represented by the time point.
     */
-  public int time() {
+  public int getTime() {
     return time;
   }
 

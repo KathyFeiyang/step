@@ -113,12 +113,14 @@ public final class FindMeetingQuery {
 
     // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
     checkDurationAndAddAvailableTimeRange(requestedDuration,
-                                          TimeRange.START_OF_DAY, orderedTimePoints.get(0).time(),
+                                          TimeRange.START_OF_DAY,
+                                          orderedTimePoints.get(0).getTime(),
                                           availableTimeRanges);
     findAndAddGapsInOccupiedTimeRanges(requestedDuration, orderedTimePoints, availableTimeRanges);
     // Potentially add the {@code TimeRange} after the last occupied {@code TimeRange}.
     checkDurationAndAddAvailableTimeRange(requestedDuration,
-                                          orderedTimePoints.get(orderedTimePoints.size() - 1).time(),
+                                          orderedTimePoints.get(orderedTimePoints.size() - 1)
+                                              .getTime(),
                                           TimeRange.END_OF_DAY + 1,
                                           availableTimeRanges);
     return availableTimeRanges;
@@ -159,39 +161,30 @@ public final class FindMeetingQuery {
   private void findAndAddGapsInOccupiedTimeRanges(long requestedDuration,
       List<TimePoint> orderedTimePoints,
       Collection<TimeRange> availableTimeRanges) {
-    int index = 0;
-    int startCounter = 0;
-    int endCounter = 0;
+    int index = 1;
+    int unendedTimeRange = 1;
 
     while (index < orderedTimePoints.size()) {
-      // Start a continuously occupied range of time.
-      if (startCounter == 0 && orderedTimePoints.get(index).isTimeRangeStart()) {
-        startCounter++;
-        index++;
-      }
-      // Find a continuously occupied range of time, which needs to be skipped. Such continuously
-      // occupied range of time would contain an equal number of start and end {@code TimePoint}.
-      // This occupied range may look like (TR stands for {@code TimeRange}):
+      // Construct a continuously occupied range of time, which needs to be skipped. Such
+      // continuously occupied range of time would contain an equal number of start and end
+      // {@code TimePoint}. This occupied range may look like (TR stands for {@code TimeRange}):
       //    [start of TR1, start of TR2, end of TR1, start of TR3, end of TR3, end of TR2]
-      while (endCounter < startCounter) {
+      // Available time occurs after the continuously occupied ranges of time.
+      if (unendedTimeRange > 0) {
         if (orderedTimePoints.get(index).isTimeRangeStart()) {
-          startCounter++;
+          unendedTimeRange++;
         } else {
-          endCounter++;
+          unendedTimeRange--;
         }
-        index++;
+      } else {
+        int availableTimeRangeStart = orderedTimePoints.get(index - 1).getTime();
+        int availableTimeRangeEnd = orderedTimePoints.get(index).getTime();
+        checkDurationAndAddAvailableTimeRange(requestedDuration,
+                                              availableTimeRangeStart, availableTimeRangeEnd,
+                                              availableTimeRanges);
+        unendedTimeRange = 1;
       }
-      if (index == orderedTimePoints.size()) {
-        return;
-      }
-
-      int availableTimeRangeStart = orderedTimePoints.get(index - 1).time();
-      int availableTimeRangeEnd = orderedTimePoints.get(index).time();
-      checkDurationAndAddAvailableTimeRange(requestedDuration,
-                                            availableTimeRangeStart, availableTimeRangeEnd,
-                                            availableTimeRanges);
-      startCounter = 0;
-      endCounter = 0;
+      index++;
     }
   }
 
