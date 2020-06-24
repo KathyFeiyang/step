@@ -107,8 +107,7 @@ public final class FindMeetingQuery {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    List<TimePoint> timePoints = getTimePointsFromTimeRanges(occupiedTimeRanges);
-    List<TimePoint> orderedTimePoints = getOrderedTimePoints(timePoints);
+    List<TimePoint> orderedTimePoints = getOrderedTimePointsFromTimeRanges(occupiedTimeRanges);
     List<TimeRange> availableTimeRanges = new LinkedList<>();
 
     // Potentially add the {@code TimeRange} before the first occupied {@code TimeRange}.
@@ -127,21 +126,15 @@ public final class FindMeetingQuery {
   }
 
   /**
-   * Finds the start and end {@code TimePoint} of {@code timeRanges}.
+   * Finds the start and end {@code TimePoint} of {@code timeRanges}, and sorts them based on
+   * ascending chronological order.
    */
-  private List<TimePoint> getTimePointsFromTimeRanges(Collection<TimeRange> timeRanges) {
+  private List<TimePoint> getOrderedTimePointsFromTimeRanges(Collection<TimeRange> timeRanges) {
     List<TimePoint> timePoints = new ArrayList<>(2 * timeRanges.size());
     for (TimeRange timeRange : timeRanges) {
       timePoints.add(new TimePoint(timeRange.start(), true));
       timePoints.add(new TimePoint(timeRange.end(), false));
     }
-    return timePoints;
-  }
-
-  /**
-   * Sorts the start or end{@code TimePoint} based on ascending chronological order.
-   */
-  private List<TimePoint> getOrderedTimePoints(List<TimePoint> timePoints) {
     Collections.sort(timePoints, TimePoint.ORDER_BY_TIME);
     return timePoints;
   }
@@ -168,8 +161,7 @@ public final class FindMeetingQuery {
       // {@code TimePoint}. This occupied range may look like (TR stands for {@code TimeRange}):
       //    [start of TR1, start of TR2, end of TR1, start of TR3, end of TR3, end of TR2]
       // Available time occurs after the continuously occupied ranges of time.
-      int _ = orderedTimePoints.get(index).isTimeRangeStart() ?
-          unendedTimeRange++ : unendedTimeRange--;
+      unendedTimeRange += orderedTimePoints.get(index).isTimeRangeStart() ? +1 : -1;
       if (unendedTimeRange == 0 && index + 1 < orderedTimePoints.size()) {
         int availableTimeRangeStart = orderedTimePoints.get(index).getTime();
         int availableTimeRangeEnd = orderedTimePoints.get(index + 1).getTime();
