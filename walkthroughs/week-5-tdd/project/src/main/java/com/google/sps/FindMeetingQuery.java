@@ -46,17 +46,17 @@ public final class FindMeetingQuery {
    * @return All available {@code TimeRange} that satisfy the meeting request.
    */
   public Collection<TimeRange> query(Collection<Event> events, MeetingRequest request) {
-    Collection<String> attendees = request.getAttendees();
+    Collection<String> mandatoryAttendees = request.getAttendees();
     Collection<String> optionalAttendees = request.getOptionalAttendees();
     long requestedDuration = request.getDuration();
 
     if (requestedDuration > TimeRange.WHOLE_DAY.duration()) {
       return Arrays.asList();
-    } else if (events.isEmpty() || (attendees.isEmpty() && optionalAttendees.isEmpty())) {
+    } else if (events.isEmpty() || (mandatoryAttendees.isEmpty() && optionalAttendees.isEmpty())) {
       return Arrays.asList(TimeRange.WHOLE_DAY);
     }
 
-    Collection<String> allAttendees = new HashSet<>(attendees);
+    Collection<String> allAttendees = new HashSet<>(mandatoryAttendees);
     allAttendees.addAll(optionalAttendees);
     Collection<TimeRange> allOccupiedTimeRanges =
         getConcernedAttendeesTimeRangesFromEvents(events, allAttendees);
@@ -66,9 +66,9 @@ public final class FindMeetingQuery {
       return availableTimeRangesForAllAttendees;
     }
 
-    if (!attendees.isEmpty()) {
+    if (!mandatoryAttendees.isEmpty()) {
       Collection<TimeRange> occupiedTimeRanges =
-          getConcernedAttendeesTimeRangesFromEvents(events, attendees);
+          getConcernedAttendeesTimeRangesFromEvents(events, mandatoryAttendees);
       return getAvailableTimeRanges(occupiedTimeRanges, requestedDuration);
     } else {
       Collection<TimeRange> optionalOccupiedTimeRanges =
